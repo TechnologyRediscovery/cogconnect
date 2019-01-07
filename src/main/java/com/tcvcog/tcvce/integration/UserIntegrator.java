@@ -403,6 +403,31 @@ public class UserIntegrator extends BackingBeanUtils implements Serializable {
         return muniList;
     }
     
+    private void setUserAuthMunis(User u, ArrayList<Municipality> munilist){       
+        Connection con = getPostgresCon();
+        String query = "INSERT INTO loginmuni (\n" + 
+                "userid, muni_municode)\n" +  "VALUES (?,?)";        
+        PreparedStatement stmt = null;
+        int userId = u.getUserID();
+                
+        try { 
+                stmt = con.prepareStatement(query);
+                stmt.setInt(1,userId);
+                for(Municipality muni: munilist){
+                    int municode = muni.getMuniCode();
+                    stmt.setInt(2,municode);
+                    stmt.executeQuery();                    
+                }
+                
+        } catch (SQLException ex) {
+            
+        } finally {
+            if (stmt != null){ try { stmt.close(); } catch (SQLException ex) {/* ignored */ } }
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+        } // close finally
+        
+    }
+    
     /**
      * For use by system administrators to manage user data
      * @return
