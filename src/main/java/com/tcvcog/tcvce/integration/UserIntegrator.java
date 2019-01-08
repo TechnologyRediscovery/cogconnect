@@ -403,13 +403,14 @@ public class UserIntegrator extends BackingBeanUtils implements Serializable {
         return muniList;
     }
     
-    private void setUserAuthMunis(User u, ArrayList<Municipality> munilist){       
+    private void setUserAuthMunis(User u, ArrayList<Municipality> munilist) throws IntegrationException{       
         Connection con = getPostgresCon();
         String query = "INSERT INTO loginmuni (\n" + 
                 "userid, muni_municode)\n" +  "VALUES (?,?)";        
         PreparedStatement stmt = null;
         int userId = u.getUserID();
-                
+        
+        // could try go inside the for loop? What are the ramifications?
         try { 
                 stmt = con.prepareStatement(query);
                 stmt.setInt(1,userId);
@@ -420,7 +421,7 @@ public class UserIntegrator extends BackingBeanUtils implements Serializable {
                 }
                 
         } catch (SQLException ex) {
-            
+            throw new IntegrationException("Error in mapping authorized municipality to user", ex);
         } finally {
             if (stmt != null){ try { stmt.close(); } catch (SQLException ex) {/* ignored */ } }
             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
