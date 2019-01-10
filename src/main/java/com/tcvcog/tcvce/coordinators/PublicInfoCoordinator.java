@@ -90,6 +90,7 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
         pib.setPacc(c.getPublicControlCode());
         pib.setTypeName("CECASE");
         pib.setMuni(c.getProperty().getMuni());
+        
         if(c.isPaccEnabled()){
             pib.setCasePhase(c.getCasePhase());
             pib.setOriginiationDatePretty(getPrettyDate(c.getOriginationDate()));
@@ -145,6 +146,7 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
         pib.setPacc(req.getRequestPublicCC());
         pib.setDateOfRecord(getPrettyDate(req.getDateOfRecord()));
         pib.setMuni(req.getMuni());
+        pib.setPaccEnabled(req.isPaccEnabled());
 
         if(req.isPaccEnabled()){
             
@@ -184,7 +186,7 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
             pib.setShowDetailsPageButton(false);
         } else {
             pib.setPaccStatusMessage("A public information bundle was found but public "
-                    + "access was switched off by a code officer. Please contact your municipal office at " + req.getMuni().getPhone());
+                    + "access has been disabled by a staff person. Please contact your municipal office at " + req.getMuni().getPhone());
             
         }
         
@@ -202,14 +204,21 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
         if(bundle.getTypeName().equals("Code enforcement action request")){
             requestBundle = (PublicInfoBundleCEActionRequest) bundle;
             StringBuilder sb = new StringBuilder();
-            sb.append(requestBundle.getPublicExternalNotes());
+            
+            if(requestBundle.getPublicExternalNotes() != null){
+                sb.append(requestBundle.getPublicExternalNotes());
+            }
             sb.append("<br/><br/>");
-            sb.append("CASE NOTE ADDED AT ");
-            sb.append(current.toString());
-            sb.append("by public user: <br/>");
+            sb.append("***************START***************");
+            sb.append("<br/>");
+            sb.append("CASE NOTE added by public portal user");
+            sb.append("<br/>");
+            sb.append("Timestamp: ");
+            sb.append(getPrettyDate(current));
+            sb.append(":<br/>");
             sb.append(message);
             sb.append("<br/>");
-            sb.append("***********************");
+            sb.append("***************END*****************");
             
             System.out.println("PublicInfoCoordinator.attachmessagToBundle | message: " + sb.toString());
             ceari.attachMessageToCEActionRequest(requestBundle, sb.toString());

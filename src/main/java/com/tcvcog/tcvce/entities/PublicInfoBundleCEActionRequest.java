@@ -26,6 +26,7 @@ public class PublicInfoBundleCEActionRequest extends PublicInfoBundle implements
     private String issueTypeString;
     private String caseLinkStatus;
     private boolean linkedToCase;
+    private boolean paccEnabled;
     
     private String formattedSubmittedTimeStamp;
     private String requestDescription;
@@ -52,106 +53,110 @@ public class PublicInfoBundleCEActionRequest extends PublicInfoBundle implements
         sb.append(getPaccStatusMessage());
         sb.append("<br/>");
         
-        sb.append("<span class=\"bold\">");
-        sb.append("Municipality: ");
-        sb.append("</span>");
-        sb.append(getMuni().getMuniName());
-        sb.append("<br/>");
-        sb.append(getMuni().getAddress_street());
-        sb.append("<br/>");
-        sb.append(getMuni().getAddress_city());
-        sb.append(" ");
-        sb.append(getMuni().getAddress_state());
-        sb.append(" ");
-        sb.append(getMuni().getAddress_zip());
-        sb.append("<br/>");
-        sb.append(getMuni().getPhone());
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Action Request Status: ");
-        sb.append("</span>");
-        sb.append(requestStatus.statusTitle);
-        sb.append("<br/>");
-        
-        
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Data bundle name: ");
-        sb.append("</span>");
-        sb.append(getTypeName());
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Date of record: ");
-        sb.append("</span>");
-        sb.append(getDateOfRecord());
-        sb.append("<br/>");
-        
-        if(isAddressAssociated()){
-            sb.append("<span class=\"bold\">");
-            sb.append("Property Address: ");
-            sb.append("</span>");
-            sb.append(getPropertyAddress());
-            sb.append("<br/>");
+        if(paccEnabled){
             
-        }
-        
-        if(getCaseManagerName() != null){
+
             sb.append("<span class=\"bold\">");
-            sb.append("Assigned code enforcement officer: ");
+            sb.append("Municipality: ");
             sb.append("</span>");
-            sb.append(getCaseManagerName());
+            sb.append(getMuni().getMuniName());
             sb.append("<br/>");
-            sb.append(getCaseManagerContact());
+            sb.append(getMuni().getAddress_street());
             sb.append("<br/>");
+            sb.append(getMuni().getAddress_city());
+            sb.append(" ");
+            sb.append(getMuni().getAddress_state());
+            sb.append(" ");
+            sb.append(getMuni().getAddress_zip());
+            sb.append("<br/>");
+            sb.append(getMuni().getPhone());
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Action Request Status: ");
+            sb.append("</span>");
+            sb.append(requestStatus.statusTitle);
+            sb.append("<br/>");
+
+
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Data bundle name: ");
+            sb.append("</span>");
+            sb.append(getTypeName());
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Date of record: ");
+            sb.append("</span>");
+            sb.append(getDateOfRecord());
+            sb.append("<br/>");
+
+            if(isAddressAssociated()){
+                sb.append("<span class=\"bold\">");
+                sb.append("Property Address: ");
+                sb.append("</span>");
+                sb.append(getPropertyAddress());
+                sb.append("<br/>");
+
+            }
+
+            if(getCaseManagerName() != null){
+                sb.append("<span class=\"bold\">");
+                sb.append("Assigned code enforcement officer: ");
+                sb.append("</span>");
+                sb.append(getCaseManagerName());
+                sb.append("<br/>");
+                sb.append(getCaseManagerContact());
+                sb.append("<br/>");
+            }
+
+            // start action specific sections
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Request ID number: ");
+            sb.append("</span>");
+            sb.append(requestID);
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Submission date: ");
+            sb.append("</span>");
+            sb.append(formattedSubmittedTimeStamp);
+            sb.append("<br/>");
+
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Requestor name: ");
+            sb.append("</span>");
+            sb.append(actionRequestorFLname);
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Issue type: ");
+            sb.append("</span>");
+            sb.append(issueTypeString);
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Case link status: ");
+            sb.append("</span>");
+            sb.append(caseLinkStatus);
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Request description: ");
+            sb.append("</span>");
+            sb.append(requestDescription);
+            sb.append("<br/>");
+
+            sb.append("<span class=\"bold\">");
+            sb.append("Public notes: ");
+            sb.append("</span>");
+            sb.append(publicExternalNotes);
+            sb.append("<br/>");
+        
         }
-        
-        // start action specific sections
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Request ID number: ");
-        sb.append("</span>");
-        sb.append(requestID);
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Submission date: ");
-        sb.append("</span>");
-        sb.append(formattedSubmittedTimeStamp);
-        sb.append("<br/>");
-        
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Requestor name: ");
-        sb.append("</span>");
-        sb.append(actionRequestorFLname);
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Issue type: ");
-        sb.append("</span>");
-        sb.append(issueTypeString);
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Case link status: ");
-        sb.append("</span>");
-        sb.append(caseLinkStatus);
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Request description: ");
-        sb.append("</span>");
-        sb.append(requestDescription);
-        sb.append("<br/>");
-        
-        sb.append("<span class=\"bold\">");
-        sb.append("Public notes: ");
-        sb.append("</span>");
-        sb.append(publicExternalNotes);
-        sb.append("<br/>");
-        
         sb.append("</p>");
         
                
@@ -296,5 +301,19 @@ public class PublicInfoBundleCEActionRequest extends PublicInfoBundle implements
      */
     public void setLinkedToCase(boolean linkedToCase) {
         this.linkedToCase = linkedToCase;
+    }
+
+    /**
+     * @return the paccEnabled
+     */
+    public boolean isPaccEnabled() {
+        return paccEnabled;
+    }
+
+    /**
+     * @param paccEnabled the paccEnabled to set
+     */
+    public void setPaccEnabled(boolean paccEnabled) {
+        this.paccEnabled = paccEnabled;
     }
 }

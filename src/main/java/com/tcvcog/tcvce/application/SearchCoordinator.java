@@ -41,13 +41,13 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
             SearchParamsCEActionRequests sps = new SearchParamsCEActionRequests();
             sps.setMuni(getSessionBean().getActiveMuni());
 
-            LocalDateTime pastTenYears = LocalDateTime.now().minusYears(10);
-            sps.setStartDate(pastTenYears);
+            LocalDateTime past20Days = LocalDateTime.now().minusDays(20);
+            sps.setStartDate(past20Days);
             
             // action requests cannot have a time stamp past the current datetime
             sps.setEndDate(LocalDateTime.now());
 
-            sps.setUseAttachedToCase(true);
+            sps.setUseAttachedToCase(false);
             sps.setAttachedToCase(false);
             sps.setUseMarkedUrgent(false);
             sps.setUseNotAtAddress(false);

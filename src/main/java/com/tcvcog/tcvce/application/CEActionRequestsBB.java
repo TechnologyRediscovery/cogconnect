@@ -118,11 +118,24 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
     public void path2UseSelectedCaseForAttachment(CECase c){
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         selectedCaseForAttachment = c;
+        
+        MessageBuilderParams mbp = new MessageBuilderParams();
+        mbp.user = getFacesUser();
+        mbp.existingContent = selectedRequest.getPublicExternalNotes();
+        mbp.header = getResourceBundle(Constants.MESSAGE_BUNDLE).getString("attachedToExistingCaseHeader");
+        mbp.explanation = getResourceBundle(Constants.MESSAGE_BUNDLE).getString("attachedToExistingCaseExplanation");
+        mbp.newMessageContent = "";
+
+        selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
+        
         try {
             ceari.connectActionRequestToCECase(selectedRequest.getRequestID(), selectedCaseForAttachment.getCaseID(), getFacesUser().getUserID() );
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
                         "Successfully connected action request ID " + selectedRequest.getRequestID() 
                                 + " to code enforcement case ID " + selectedCaseForAttachment.getCaseID(), ""));
+            ceari.updateActionRequestNotes(selectedRequest);
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
+                        "A note has been added to request ID: " + selectedRequest.getRequestID(), ""));
         } catch (CaseLifecyleException | IntegrationException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, 
@@ -183,7 +196,9 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             mbp.explanation = getResourceBundle(Constants.MESSAGE_BUNDLE).getString("noViolationFoundExplanation");
             mbp.newMessageContent = noViolationFoundMessage;
             
-            selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
+            String newNotes = appendNoteBlock(mbp);
+            System.out.println("CEActionRequests.path4AttachNoViolationFoundMessage | notes: " + newNotes);
+            selectedRequest.setPublicExternalNotes(newNotes);
             
             // force the bean to go to the integrator and fetch a fresh, updated
             // list of action requests
@@ -273,6 +288,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             sb.append(" (");
             sb.append(formerProp.getMuni().getMuniName());
             sb.append(")");
+            sb.append("<br/>");
             sb.append("New address: ");
             sb.append(selectedRequest.getRequestProperty().getAddress());
             sb.append(" (");
@@ -450,7 +466,8 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         
         CEActionRequestIntegrator ari = getcEActionRequestIntegrator();
         SearchParamsCEActionRequests spcear = getSearchParams();
-        if(requestList == null || requestList.isEmpty()){
+//        if(requestList == null || requestList.isEmpty()){
+        if(requestList == null){
             System.out.println("CeActionRequestsBB.getUnlinkedRequestList | unlinkedrequests is null");
             try {
                 requestList = ari.getCEActionRequestList(spcear);

@@ -212,21 +212,24 @@ public class BackingBeanUtils implements Serializable{
     
     public String appendNoteBlock(MessageBuilderParams mcc){
         StringBuilder sb = new StringBuilder();
-        sb.append(mcc.existingContent);
+        if(mcc.existingContent != null){
+            sb.append(mcc.existingContent);
+        }
         sb.append("<br/><br/>**************************************<br/>");
         sb.append(mcc.header);
         sb.append("<br/>");
         sb.append(mcc.explanation);
         sb.append("<br/>");
-        sb.append(mcc.newMessageContent);
-        sb.append("<br/>");
-        sb.append("--------------------------------------<br/>");
         sb.append(getResourceBundle(Constants.MESSAGE_BUNDLE).getString("signatureLeader"));
         sb.append(getFacesUser().getFName());
         sb.append(" ");
         sb.append(getFacesUser().getLName());
         sb.append(" at ");
         sb.append(getPrettyDate(LocalDateTime.now()));
+        sb.append("<br/>");
+        sb.append("Note text:");
+        sb.append("<br/>");
+        sb.append(mcc.newMessageContent);
         sb.append("<br/>");
         sb.append("**************************************<br/>");
         return sb.toString();
