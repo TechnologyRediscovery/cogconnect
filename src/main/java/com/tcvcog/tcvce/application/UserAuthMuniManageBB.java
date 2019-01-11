@@ -11,6 +11,8 @@ import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
 import com.tcvcog.tcvce.entities.User;
 import com.tcvcog.tcvce.integration.UserIntegrator;
 
+import com.tcvcog.tcvce.coordinators.UserAuthMuniCoordinator;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import javax.faces.application.FacesMessage;
@@ -23,11 +25,14 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
     
     private ArrayList<Municipality> muniList;
     private ArrayList<User> userList;
+    private ArrayList<Municipality> authMuniList;
+    private ArrayList<Municipality> unauthorizedMuniList;
+    private ArrayList<Municipality> selectedMunis;
+
     private User selectedUser;
     private Municipality selectedMuni;
  
     public UserAuthMuniManageBB() {
-        
         
     }
     
@@ -48,13 +53,15 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
     public ArrayList<User> getUserList() {
         UserIntegrator ui = getUserIntegrator();
         try {
-            userList = ui.getCompleteUserList();
+            if (userList == null) {
+                userList = ui.getCompleteUserList();
+            }
         } catch (IntegrationException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
                             "Unable to acquire list of users",
-                            "This is a system-level error that msut be corrected by an administrator"));
+                            "This is a system-level error that must be corrected by an administrator"));
         }
         return userList;
     }
@@ -69,6 +76,14 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
 
     public void setSelectedUser(User selectedUser) {
         this.selectedUser = selectedUser;
+    }
+
+    public ArrayList<Municipality> getSelectedMunis() {
+        return selectedMunis;
+    }
+
+    public void setSelectedMunis(ArrayList<Municipality> selectedMunis) {
+        this.selectedMunis = selectedMunis;
     }    
     
     public ArrayList<Municipality> getMuniList() {
@@ -77,53 +92,80 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         muniList = mi.getCompleteMuniList();
     } catch (IntegrationException ex) {
         System.out.println(ex.toString());
-        getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                        "Hark--No elemented selected. Please click on a code element first.", ""));
     }
     return muniList;
     }
     
-    public void setMuniList(ArrayList<Municipality> muniList) {
-        
+    public void setMuniList(ArrayList<Municipality> muniList) {        
         this.muniList = muniList;
     }
     
     
-//    
-//            
+    public ArrayList<Municipality> getAuthMuniList() {
+        System.out.println("UserAuthMuniManageBB.getUserAuthMuniList");
+        return authMuniList;
+    }
+
+    public void setAuthMuniList(ArrayList<Municipality> authMuniList) {
+        this.authMuniList = authMuniList;
+    }
+    
+    
+    public ArrayList<Municipality> getUnauthorizedMuniList() {
+        return unauthorizedMuniList;
+    }
+
+    public void setUnauthorizedMuniList(ArrayList<Municipality> unauthorizedMuniList) {
+        this.unauthorizedMuniList = unauthorizedMuniList;
+    }
+    
+    public void onSelectedUserChange() throws IntegrationException {
+        System.out.println("UserAuthMuniManageBB.onSelectedUserChange " + selectedUser.getUserID());
+        clearAuthMuniList();
+        clearUnauthorizedMuniList();
+
+        UserAuthMuniCoordinator uac = new UserAuthMuniCoordinator();            
+        unauthorizedMuniList = uac.getUnauthorizedMunis(selectedUser);
+
+        UserIntegrator ui = getUserIntegrator();
+        authMuniList = ui.getUserAuthMunis(selectedUser.getUserID());
         
-//    public void thisisntreal(){
-//        MunicipalityIntegrator mi = new MunicipalityIntegrator();
-//        muniList = mi.getCompleteMuniList();
-//        authMuniList = mi.getUserAuthMunis();       
-//        UserIntegrator ui = new UserIntegrator();
-//        userList = ui.getCompleteUserList();
-//        
-//        UserIntegrator ui = new UserIntegrator();
-//        User u = ui.getUser(101);
-//        MunicipalityIntegrator mi = new MunicipalityIntegrator();
-//        ArrayList<Municipality> list = mi.getCompleteMuniList();
-//        ui.setUserAuthMunis(u, list);
-//    }
-//  
-//    public User getSelectedUser() {
-//        return selectedUser;
-//    }
-//
-//    public void setSelectedUser(User selectedUser) {
-//        this.selectedUser = selectedUser;
-//    }
-//    
-//    public String addAuthMuni() throws IntegrationException {
-//        UserIntegrator ui = new UserIntegrator();
-//        User u = ui.getUser(101);
-//        MunicipalityIntegrator mi = new MunicipalityIntegrator();
-//        ArrayList<Municipality> list = mi.getCompleteMuniList();
-//        ui.setUserAuthMunis(u, list);
-//        
-//        return "success";
-//    }
+        selectedMunis = new ArrayList<>();
+            
+    }
+    
+    public void onSelectedMuniChange() {
+        System.out.println("UserAuthMuniManageBB.onSelectedMuniChange " + selectedMuni.getMuniName());
+        try{
+            addAuthMuni();
+        } catch(IntegrationException ex){
+        
+        }
+    }
+    
+    public void clearAuthMuniList() {
+        authMuniList = null;
+    }
+    
+    public void clearUnauthorizedMuniList(){
+        unauthorizedMuniList = null;
+    }
+
+    public void addAuthMuni() throws IntegrationException {
+        System.out.println("UserAuthMuniManageBB.addAuthMuni: " + selectedUser.getUserID() + " & " + selectedMuni.getMuniName());
+        selectedMunis.add(selectedMuni);      
+        authMuniList.add(selectedMuni);
+    }
+    
+    public void updateAuthMunis() throws IntegrationException {
+        System.out.println("UserAuthMuniManageBB.updateAuthMunis" + selectedUser + " & " + selectedMunis);
+        UserIntegrator ui = getUserIntegrator();
+        ui.setUserAuthMunis(selectedUser, selectedMunis);
+        selectedMunis = new ArrayList<>();
+        UserAuthMuniCoordinator uac = new UserAuthMuniCoordinator();
+        selectedMunis.clear();
+        unauthorizedMuniList = uac.getUnauthorizedMunis(selectedUser);
+    }
 
 
 

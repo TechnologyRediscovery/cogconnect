@@ -6,19 +6,46 @@
       xmlns:f="http://xmlns.jcp.org/jsf/core"
       xmlns:p="http://primefaces.org/ui">    
     <h:body>
-        <h1> Assign authorized municipalities to users </h1>
-        <f:view>
-            <h:form>                
-                <p:selectOneMenu id="muniListr" value="#{userAuthMuniManageBB.selectedMuni}">
-                    <f:selectItems value="#{userAuthMuniManageBB.muniList}"  var="m" itemValue="#{m}" itemLabel="#{m.muniName}" />
-                    <f:converter converterId="muniConverter"/>
-                </p:selectOneMenu>
-                
-                <p:selectOneMenu id="muniList" value="#{userAuthMuniManageBB.selectedUser}">
-                    <f:selectItems value="#{userAuthMuniManageBB.userList}"  var="u" itemValue="#{u}" itemLabel="#{u.username}"/>
-                    <f:converter converterId="userConverter"/>
-                </p:selectOneMenu>
-            </h:form>
-        </f:view>
+        <ui:composition template="../navContainer_restricted.xhtml">
+            <ui:define name="content">
+                <f:view id="userAuthMuniManageView">
+                    <h:form>        
+                        
+                        <p:selectOneMenu id="userList" value="#{userAuthMuniManageBB.selectedUser}">
+                            <p:ajax listener="#{userAuthMuniManageBB.onSelectedUserChange()}" update="unauthorizedMuniList authMuniTable" />
+                            <f:selectItem itemLabel="Select a user" noSelectionOption="true" />
+                            <f:selectItems value="#{userAuthMuniManageBB.userList}"  var="u" itemValue="#{u}" itemLabel="#{u.username}"/>
+                            <f:converter converterId="userConverter"/>
+                        </p:selectOneMenu>   
+                        
+                        <p:dataTable id="authMuniTable" var="municipality" value="#{userAuthMuniManageBB.authMuniList}" style="width:20%">
+                            <p:column headerText="Authorized Municipalities">
+                                <h:outputText value="#{municipality.muniName}"/>
+                            </p:column>
+                        </p:dataTable>                        
+
+                        <p:selectOneMenu id="unauthorizedMuniList" value="#{userAuthMuniManageBB.selectedMuni}">
+                            <f:selectItem itemLabel="Select a municipality" noSelectionOption="true" />
+                            <f:selectItems value="#{userAuthMuniManageBB.unauthorizedMuniList}"  var="m" itemValue="#{m}" itemLabel="#{m.muniName}" />
+                            <f:converter converterId="muniConverter"/>
+                        </p:selectOneMenu>                       
+                        
+                        <br></br>
+                        <p:commandButton ajax="true" action="#{userAuthMuniManageBB.addAuthMuni}"
+                                         value="Add muni" update="addedMunisTable"/> 
+
+                        <p:dataTable id="addedMunisTable" var="municipality" value="#{userAuthMuniManageBB.selectedMunis}" style="width:20%">
+                            <p:column headerText="Municipalities to add">
+                                <h:outputText value="#{municipality.muniName}"/>
+                            </p:column>
+                        </p:dataTable>
+                        
+                        <p:commandButton ajax="true" action="#{userAuthMuniManageBB.updateAuthMunis}"
+                             value="Update DB" update="authMuniTable addedMunisTable unauthorizedMuniList"/>                    
+                        
+                    </h:form>
+                </f:view>
+            </ui:define>
+        </ui:composition>
     </h:body>
 </html>
