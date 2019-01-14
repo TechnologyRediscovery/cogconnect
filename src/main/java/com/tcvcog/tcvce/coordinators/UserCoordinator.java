@@ -39,20 +39,17 @@ import java.util.ArrayList;
 @ApplicationScoped
 @Named("userCoordinator")
 public class UserCoordinator extends BackingBeanUtils implements Serializable {
-
     
     /**
      * Creates a new instance of UserCoordinator
      */
     public UserCoordinator(){
-       
-        
-    }
     
+    }    
    
     /**
      * Primary user retrieval method: Note that there aren't as many checks here
-     * since the glassfish container is managing the lookup of authenticated uers. 
+     * since the glassfish container is managing the lookup of authenticated users. 
      * We are pulling the login name from the already authenticated glassfish user 
      * and just grabbing their profile from the db
      * 
@@ -63,7 +60,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
      * has been retrieved from the database but their access has been toggled off
      */
     public User getUser(String loginName) throws IntegrationException, AuthorizationException{
-        System.out.println("UserCoordinator.geUser | given: " + loginName );
+        System.out.println("UserCoordinator.getUser | given: " + loginName );
         User authenticatedUser;
         UserIntegrator ui = getUserIntegrator();
         authenticatedUser = ui.getUser(loginName);
@@ -155,25 +152,31 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                
             default:
                
-        }
-        
+        }        
         return card;
     }    
-        
+    
+    /**
+     * Return a list of Municipalities that User u does not currently have the
+     * authorization to access.
+     * @param u the user in question
+     * @return A list of Municipality objects that the user does not have 
+     *     access to  
+     * @throws IntegrationException 
+     */
     public ArrayList<Municipality> getUnauthorizedMunis(User u) throws IntegrationException{
-        System.out.println("UserAuthMuniCoordinator.getUnauthorizedMunis for " + u);
-        UserIntegrator ui = getUserIntegrator();
-        ArrayList<Municipality> authMunis = ui.getUserAuthMunis(u.getUserID());
+        System.out.println("UserCoordinator.getUnauthorizedMunis | " + u.getUsername());
         
+        UserIntegrator ui = getUserIntegrator();
+        ArrayList<Municipality> authMunis = ui.getUserAuthMunis(u.getUserID());        
         MunicipalityIntegrator mi = getMunicipalityIntegrator();
-        ArrayList<Municipality> munis = mi.getCompleteMuniList();        
+        ArrayList<Municipality> munis = mi.getCompleteMuniList();
         
         if(authMunis != null){
             for(Municipality authMuni:authMunis){
                 munis.remove(authMuni);
             }
-        }
-        
+        }        
         return munis;
     }
     
