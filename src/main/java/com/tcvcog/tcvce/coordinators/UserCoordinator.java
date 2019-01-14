@@ -109,8 +109,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                                     true,   // enfOfficial
                                     true,   // muniStaff
                                     true);  // muniReader
-               break;
-               
+               break;               
                
             case CogStaff:
                 card = new AccessKeyCard( false,   //developer
@@ -119,8 +118,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                                     false,   // enfOfficial
                                     true,   // muniStaff
                                     true);  // muniReader
-               break;
-               
+               break;               
                
             case EnforcementOfficial:
                 card = new AccessKeyCard( false,   //developer
@@ -147,8 +145,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                                     false,   // enfOfficial
                                     false,   // muniStaff
                                     true);  // muniReader
-               break;
-               
+               break;               
                
             default:
                
@@ -164,7 +161,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
      *     access to  
      * @throws IntegrationException 
      */
-    public ArrayList<Municipality> getUnauthorizedMunis(User u) throws IntegrationException{
+    public ArrayList<Municipality> getUnauthorizedMunis(User u) throws IntegrationException {
         System.out.println("UserCoordinator.getUnauthorizedMunis | " + u.getUsername());
         
         UserIntegrator ui = getUserIntegrator();
