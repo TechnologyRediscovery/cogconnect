@@ -9,8 +9,10 @@
         <ui:composition template="../navContainer_restricted.xhtml">
             <ui:define name="content">
                 <f:view id="userAuthMuniManageView">
-                    <h:form>        
-                        
+                    <h:form id="userAuthMuniForm">        
+                        <h:messages id="updateMsg" globalOnly="true" showDetail="true" showSummary="true"
+                            warnClass="msgWarn" infoClass="msgInfo" fatalClass="msgFatal" errorClass="msgError">
+                        </h:messages>
                         <p:selectOneMenu id="userList" value="#{userAuthMuniManageBB.selectedUser}">
                             <p:ajax listener="#{userAuthMuniManageBB.onSelectedUserChange()}" update="unauthorizedMuniList authMuniTable" />
                             <f:selectItem itemLabel="Select a user" noSelectionOption="true" />
@@ -18,9 +20,13 @@
                             <f:converter converterId="userConverter"/>
                         </p:selectOneMenu>   
                         
-                        <p:dataTable id="authMuniTable" var="municipality" value="#{userAuthMuniManageBB.authMuniList}" style="width:20%">
+                        <p:dataTable id="authMuniTable" var="municipality" value="#{userAuthMuniManageBB.authMuniList}" style="width:500px">
                             <p:column headerText="Authorized Municipalities">
                                 <h:outputText value="#{municipality.muniName}"/>
+                            </p:column>
+                            <p:column headerText="Remove Municipality?">
+                                <p:commandButton value="Remove" actionListener="#{userAuthMuniManageBB.removeAuthMuni(municipality)}" 
+                                                 update="authMuniTable"> </p:commandButton>  
                             </p:column>
                         </p:dataTable>                        
 
@@ -34,14 +40,15 @@
                         <p:commandButton ajax="true" action="#{userAuthMuniManageBB.addAuthMuni}"
                                          value="Add muni" update="addedMunisTable"/> 
 
-                        <p:dataTable id="addedMunisTable" var="municipality" value="#{userAuthMuniManageBB.selectedMunis}" style="width:20%">
-                            <p:column headerText="Municipalities to add">
+                        <p:dataTable id="addedMunisTable" var="municipality" value="#{userAuthMuniManageBB.selectedMunis}" style="width:500px">
+                            <p:column headerText="Selected Municipality">
                                 <h:outputText value="#{municipality.muniName}"/>
                             </p:column>
                         </p:dataTable>
                         
-                        <p:commandButton ajax="true" action="#{userAuthMuniManageBB.updateAuthMunis}"
-                             value="Update DB" update="authMuniTable addedMunisTable unauthorizedMuniList"/>                    
+                        <p:commandButton ajax="false" action="#{userAuthMuniManageBB.updateAuthMunis}"
+                             value="Update DB" update="userAuthMuniForm:updateMsg">
+                        </p:commandButton>
                         
                     </h:form>
                 </f:view>
