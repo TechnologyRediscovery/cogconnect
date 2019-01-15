@@ -1,7 +1,18 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (C) 2019 Eric C. Darsow
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package com.tcvcog.tcvce.application;
 
@@ -87,9 +98,9 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
             System.out.println("UserAuthMuniManageBB.getUserList | " + ex.toString());
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
-                            "Unable to acquire list of users",
+                            "Unable to acquire list of users.",
                             "This is a system-level error that must be corrected by an "
-                                    + "administrator"));
+                                    + "administrator."));
         }
         return userList;
     }
@@ -122,6 +133,11 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         this.selectedUser = selectedUser;
     }
     
+    /** 
+     * This method is called whenever the user selects a username from the list of users. Whenever 
+     * it is called, it replaces the current authMuniList and also creates the unauthorizedMuniList
+     * for the selected user.
+     */
     public void onSelectedUserChange() {
         System.out.println("UserAuthMuniManageBB.onSelectedUserChange |" + selectedUser.getUserID());
         clearAuthMuniList();
@@ -129,7 +145,6 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
 
         try {
             unauthorizedMuniList = getUnauthorizedMuniList();
-
             UserIntegrator ui = getUserIntegrator();
             authMuniList = ui.getUserAuthMunis(selectedUser.getUserID());
         } catch(IntegrationException ex){
@@ -137,55 +152,44 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         }
         selectedMunis = new ArrayList<>();            
     }
-    
-    public void onSelectedMuniChange() {
-        System.out.println("UserAuthMuniManageBB.onSelectedMuniChange | " 
-                + selectedMuni.getMuniName());
-            addAuthMuni();
-        clearSelectedMunis();
-    }
-    
-    public void clearAuthMuniList() {
-        authMuniList = null;
-    }
-    
-    public void clearUnauthorizedMuniList(){
-        unauthorizedMuniList = null;
-    }
-    public void clearSelectedMunis(){
-        selectedMunis.clear();
-        clearSelectedMuni();
-    }
-    public void clearSelectedMuni(){
-        selectedMuni = null;
-    }
 
+    /** 
+     * This method adds the selected municipality to a list of municipalities that will be mapped 
+     * to the selected user when updateAuthMunis() is called.  
+     * @return An empty String, which refreshes the page.
+     */
     public String addAuthMuni() {
         if(selectedMuni == null) {
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
                             "Please select a municipality",""));
         }
-        else if (checkForDuplicates(selectedMuni)){
+        else if (checkForDuplicateMuni(selectedMuni)){
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
-                            "Cannot add the same municipality more than once. Please make a "
-                                    + "different selection",""));
+                            "Cannot add the same municipality more than once, please make a "
+                                    + "different selection.",""));
         } 
         else {
             System.out.println("UserAuthMuniManageBB.addAuthMuni | " + selectedUser.getUserID() + " & " 
                 + selectedMuni.getMuniName());
-             selectedMunis.add(selectedMuni);   
+             selectedMunis.add(selectedMuni);
         }
         return "";
     }
     
+    /**
+     * Updates the loginmuni data table with the list of selected municipalities corresponding to 
+     * the selected user. Also clears all selections and lists of municipalities, so that the user
+     * can make another selection to edit user-municipality mappings.
+     * @return An empty String, which refreshes the page.
+     */
     public String updateAuthMunis() {
         
-        if(selectedMuni == null || selectedMunis == null || selectedUser == null){
+        if(selectedMuni == null || selectedMunis.isEmpty() || selectedUser == null){
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
-                            "Please select a user and add some municipalities",""));
+                            "Please select a user and add one or more municipalities.",""));
         }
         else {
             System.out.println("UserAuthMuniManageBB.updateAuthMunis | " + selectedUser.getUserID() 
@@ -202,7 +206,7 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
             for(Municipality m:selectedMunis){          
             getFacesContext().addMessage(null,
                         new FacesMessage(FacesMessage.SEVERITY_INFO,
-                                m.getMuniName() + " mapped to " + selectedUser.getUsername(),
+                                m.getMuniName() + " mapped to " + selectedUser.getUsername() + ".",
                                 ""));
             }
             selectedMunis.clear();
@@ -214,6 +218,22 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         return "";
     }
     
+    /**
+     * Removes a municipality from the selectedMunis list.
+     * @param muni
+     * @return  An empty String, which refreshes the page.
+     */
+    public String removeSelectedMuni(Municipality muni) {
+        selectedMunis.remove(muni);        
+        return "";
+    }
+    
+    /**
+     * Removes user-municipality mapping for a given user and municipality. Updates authMuniList and
+     * unauthorizedMuniList.
+     * @param muni - a municipality
+     * @return An empty String, which refreshes the page.
+     */
     public String removeAuthMuni(Municipality muni){
         UserIntegrator ui = getUserIntegrator();        
         try {
@@ -224,8 +244,8 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         }
         getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
-                            "Removed " + muni.getMuniName() + " from " + selectedUser.getUsername(),
-                            ""));
+                            "Removed " + muni.getMuniName() + " from " + selectedUser.getUsername() 
+                                    + ".", ""));
         try {
             authMuniList = ui.getUserAuthMunis(selectedUser.getUserID());
         }
@@ -236,15 +256,36 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         return "";
     }
     
-    public boolean checkForDuplicates (Municipality muni){
+    
+    /**
+     * Checks for duplicates in the selectedMunis list in order to avoid SQLExceptions when adding
+     * user-municipality mappings to the loginmuni table in the database.
+     * @param muni
+     * @return A boolean indicating the presence of duplicates in the list.
+     */
+    public boolean checkForDuplicateMuni (Municipality muni){
         boolean duplicate = false;
         for (Municipality m:selectedMunis){
             if(m.equals(muni)){
-                System.out.println("IM HERE");
                 duplicate = true;
             } 
         }
         return duplicate;
+    }
+    
+    /**
+     * The following methods are utility methods used to clear selections and lists.
+     */
+    public void clearAuthMuniList() {
+        authMuniList = null;
+    }
+    
+    public void clearUnauthorizedMuniList(){
+        unauthorizedMuniList = null;
+    }
+    
+    public void clearSelectedMuni(){
+        selectedMuni = null;
     }
     
 }

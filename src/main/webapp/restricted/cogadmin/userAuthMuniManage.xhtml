@@ -15,59 +15,58 @@
                             warnClass="msgWarn" infoClass="msgInfo" fatalClass="msgFatal" errorClass="msgError">
                         </h:messages>
                         
+                        <p:outputLabel value="User:"/>
+                        <p:selectOneMenu id="userList" value="#{userAuthMuniManageBB.selectedUser}">
+                            <p:ajax listener="#{userAuthMuniManageBB.onSelectedUserChange()}" 
+                                    update="unauthorizedMuniList authMuniTable selectedMunisTable" />
+                            <f:selectItem itemLabel="Select a user" noSelectionOption="true" />
+                            <f:selectItems value="#{userAuthMuniManageBB.userList}"  var="u" itemValue="#{u}" 
+                                           itemLabel="#{u.username}"/>
+                            <f:converter converterId="userConverter"/>
+                        </p:selectOneMenu>
+                        
+                        <p:spacer height="15"/>                        
+                        
                             <p:dataTable id="authMuniTable" var="municipality" 
                                          value="#{userAuthMuniManageBB.authMuniList}" style="width:500px;">
                                 <p:column headerText="Authorized Municipalities" styleClass="centeredColumnContent">
                                     <h:outputText value="#{municipality.muniName}"/>
                                 </p:column>
-                                <p:column headerText="Remove Municipality?" styleClass="centeredColumnContent">
+                                <p:column headerText="Remove?" styleClass="centeredColumnContent">
                                     <p:commandButton ajax="false" value="Remove" 
                                                      action="#{userAuthMuniManageBB.removeAuthMuni(municipality)}" 
                                                      update="authMuniTable userAuthMuniForm:unauthorizedMuniList"> </p:commandButton>  
                                 </p:column>
                             </p:dataTable>                        
                         
-                        <p:spacer height="15"/>                        
+                        <p:spacer height="15"/>                      
                         
-                        <p:outputLabel value="User:"/>
-                            <p:selectOneMenu id="userList" value="#{userAuthMuniManageBB.selectedUser}">
-                                <p:ajax listener="#{userAuthMuniManageBB.onSelectedUserChange()}" 
-                                        update="unauthorizedMuniList authMuniTable selectedMunisTable" />
-                                <f:selectItem itemLabel="Select a user" noSelectionOption="true" />
-                                <f:selectItems value="#{userAuthMuniManageBB.userList}"  var="u" itemValue="#{u}" 
-                                               itemLabel="#{u.username}"/>
-                                <f:converter converterId="userConverter"/>
-                            </p:selectOneMenu>
-                        
-                        <p:spacer height="15"/>
-                        
-
-                        
-                        <p:outputLabel value="Municipality:"/>
+                        <p:outputLabel value="Municipality:"/>                        
                         <p:selectOneMenu id="unauthorizedMuniList" value="#{userAuthMuniManageBB.selectedMuni}">
                             <f:selectItem itemLabel="Select a municipality" noSelectionOption="true" />
                             <f:selectItems value="#{userAuthMuniManageBB.unauthorizedMuniList}"  var="m" itemValue="#{m}" 
                                            itemLabel="#{m.muniName}" />
                             <f:converter converterId="muniConverter"/>
-                        </p:selectOneMenu>                       
+                        </p:selectOneMenu>
                         
                         <p:spacer height="15"/>
                         
                         <p:commandButton ajax="false" action="#{userAuthMuniManageBB.addAuthMuni}"
-                                         value="Add" update="selectedMunisTable"/> 
-
-                        <p:spacer height="15"/>
+                                         value="Add Municipality" update="selectedMunisTable unauthorizedMuniList"/>
+                        
+                        <p:spacer height="15"/>                        
                         
                         <p:dataTable id="selectedMunisTable" var="municipality" value="#{userAuthMuniManageBB.selectedMunis}" 
-                                     style="width:500px">
+                                     style="width:500px">   
                             <p:column headerText="Selected Municipalities" styleClass="centeredColumnContent">
                                 <h:outputText value="#{municipality.muniName}"/>
                             </p:column>
-                            <f:facet name="footer">
-                                <p:commandButton ajax="true" action="#{userAuthMuniManageBB.clearSelectedMunis}" 
-                                                 value="Clear selected municipalities" 
-                                                 update="selectedMunisTable userAuthMuniForm:unauthorizedMuniList"/>
-                            </f:facet>
+                            <p:column headerText="Remove?" styleClass="centeredColumnContent">
+                                <p:commandButton ajax="false" value="Remove" 
+                                                     action="#{userAuthMuniManageBB.removeSelectedMuni(municipality)}" 
+                                                     update="selectedMunisTable selectedMunisTable:unauthorizedMuniList">
+                                </p:commandButton> 
+                            </p:column>
                         </p:dataTable>   
                         
                         <p:spacer height="15"/>
