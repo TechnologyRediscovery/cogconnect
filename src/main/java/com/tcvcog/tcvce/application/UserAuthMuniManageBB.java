@@ -97,7 +97,7 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         } catch (IntegrationException ex) {
             System.out.println("UserAuthMuniManageBB.getUserList | " + ex.toString());
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
                             "Unable to acquire list of users.",
                             "This is a system-level error that must be corrected by an "
                                     + "administrator."));
@@ -161,12 +161,12 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
     public String addAuthMuni() {
         if(selectedMuni == null) {
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
                             "Please select a municipality",""));
         }
         else if (checkForDuplicateMuni(selectedMuni)){
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
                             "Cannot add the same municipality more than once, please make a "
                                     + "different selection.",""));
         } 
@@ -188,7 +188,7 @@ public class UserAuthMuniManageBB extends BackingBeanUtils implements Serializab
         
         if(selectedMuni == null || selectedMunis.isEmpty() || selectedUser == null){
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
                             "Please select a user and add one or more municipalities.",""));
         }
         else {

@@ -15,7 +15,10 @@
                             warnClass="msgWarn" infoClass="msgInfo" fatalClass="msgFatal" errorClass="msgError">
                         </h:messages>
                         
-                        <p:outputLabel value="User:"/>
+                        <p:outputLabel value="Step 1: Select a user."/>
+                        
+                        <p:spacer height="5"/>                   
+                        
                         <p:selectOneMenu id="userList" value="#{userAuthMuniManageBB.selectedUser}">
                             <p:ajax listener="#{userAuthMuniManageBB.onSelectedUserChange()}" 
                                     update="unauthorizedMuniList authMuniTable selectedMunisTable" />
@@ -24,24 +27,31 @@
                                            itemLabel="#{u.username}"/>
                             <f:converter converterId="userConverter"/>
                         </p:selectOneMenu>
+                                                
+                        <p:spacer height="20"/>
+
+                        <p:outputLabel value="Step 2: Remove authorized municipalities, if necessary."/>                        
                         
-                        <p:spacer height="15"/>                        
+                        <p:spacer height="5"/>
                         
-                            <p:dataTable id="authMuniTable" var="municipality" 
-                                         value="#{userAuthMuniManageBB.authMuniList}" style="width:500px;">
-                                <p:column headerText="Authorized Municipalities" styleClass="centeredColumnContent">
-                                    <h:outputText value="#{municipality.muniName}"/>
-                                </p:column>
-                                <p:column headerText="Remove?" styleClass="centeredColumnContent">
-                                    <p:commandButton ajax="false" value="Remove" 
-                                                     action="#{userAuthMuniManageBB.removeAuthMuni(municipality)}" 
-                                                     update="authMuniTable userAuthMuniForm:unauthorizedMuniList"> </p:commandButton>  
-                                </p:column>
-                            </p:dataTable>                        
+                        <p:dataTable id="authMuniTable" var="municipality" 
+                                     value="#{userAuthMuniManageBB.authMuniList}" style="width:500px;">
+                            <p:column headerText="Authorized Municipalities" styleClass="centeredColumnContent">
+                                <h:outputText value="#{municipality.muniName}"/>
+                            </p:column>
+                            <p:column headerText="Remove?" styleClass="centeredColumnContent">
+                                <p:commandButton ajax="false" value="Remove" 
+                                                 action="#{userAuthMuniManageBB.removeAuthMuni(municipality)}" 
+                                                 update="authMuniTable userAuthMuniForm:unauthorizedMuniList"> </p:commandButton>  
+                            </p:column>
+                        </p:dataTable> 
                         
-                        <p:spacer height="15"/>                      
+                        <p:spacer height="20"/>
                         
-                        <p:outputLabel value="Municipality:"/>                        
+                        <p:outputLabel value="Step 3: Assign permissions. Select and add one or more municipalities."/>                        
+                        
+                        <p:spacer height="5"/>                     
+                                              
                         <p:selectOneMenu id="unauthorizedMuniList" value="#{userAuthMuniManageBB.selectedMuni}">
                             <f:selectItem itemLabel="Select a municipality" noSelectionOption="true" />
                             <f:selectItems value="#{userAuthMuniManageBB.unauthorizedMuniList}"  var="m" itemValue="#{m}" 
@@ -49,12 +59,16 @@
                             <f:converter converterId="muniConverter"/>
                         </p:selectOneMenu>
                         
-                        <p:spacer height="15"/>
+                        <p:spacer height="5"/>
                         
                         <p:commandButton ajax="false" action="#{userAuthMuniManageBB.addAuthMuni}"
                                          value="Add Municipality" update="selectedMunisTable unauthorizedMuniList"/>
                         
-                        <p:spacer height="15"/>                        
+                        <p:spacer height="20"/>
+
+                        <p:outputLabel value="Step 4: Edit selected municipalities, if necessary."/>                        
+                        
+                        <p:spacer height="5"/>                          
                         
                         <p:dataTable id="selectedMunisTable" var="municipality" value="#{userAuthMuniManageBB.selectedMunis}" 
                                      style="width:500px">   
@@ -69,10 +83,14 @@
                             </p:column>
                         </p:dataTable>   
                         
-                        <p:spacer height="15"/>
+                        <p:spacer height="20"/>
+                        
+                        <p:outputLabel value="Step 5: Submit changes."/>                        
+                        
+                        <p:spacer height="5"/>                                               
                         
                         <p:commandButton ajax="false" action="#{userAuthMuniManageBB.updateAuthMunis}"
-                             value="Update user's municipality permissions" update="userAuthMuniForm:updateMsg">
+                             value="Submit" update="userAuthMuniForm:updateMsg">
                         </p:commandButton>
                         
                     </h:form>
