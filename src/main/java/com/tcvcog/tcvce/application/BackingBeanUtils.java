@@ -53,6 +53,7 @@ import com.tcvcog.tcvce.occupancy.integration.PaymentIntegrator;
 import com.tcvcog.tcvce.integration.SystemIntegrator;
 import com.tcvcog.tcvce.integration.LogIntegrator;
 import com.tcvcog.tcvce.occupancy.coordinators.OccupancyCoordinator;
+import com.tcvcog.tcvce.occupancy.coordinators.SquareCheckoutCoordinator;
 import com.tcvcog.tcvce.util.Constants;
 import com.tcvcog.tcvce.util.MessageBuilderParams;
 import java.sql.SQLException;
@@ -63,9 +64,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.ResourceBundle;
 import javax.el.ValueExpression;
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.ManagedProperty;
-import javax.faces.bean.SessionScoped;
 import javax.faces.context.ExternalContext;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -113,6 +111,7 @@ public class BackingBeanUtils implements Serializable{
     private OccupancyPermitIntegrator occupancyPermitIntegrator;
     private PaymentIntegrator paymentIntegrator;
     private OccupancyCoordinator occupancyCoordinator;
+    private SquareCheckoutCoordinator squareCheckoutCoordinator;
     
     // system 
     private SystemIntegrator systemIntegrator;
@@ -857,8 +856,16 @@ public class BackingBeanUtils implements Serializable{
     public void setSsCoordinator(SessionSystemCoordinator ssCoordinator) {
         this.ssCoordinator = ssCoordinator;
     }
-
-       
-
-
+    
+    /**
+     * @return the squareCheckoutCoordinator
+     */
+    public SquareCheckoutCoordinator getSquareCheckoutCoordinator() {
+        FacesContext context = getFacesContext();
+        ValueExpression ve = context.getApplication().getExpressionFactory()
+                .createValueExpression(context.getELContext(), "#{squareCheckoutCoordinator}", SquareCheckoutCoordinator.class);
+        squareCheckoutCoordinator = (SquareCheckoutCoordinator) ve.getValue(context.getELContext());
+        return squareCheckoutCoordinator;
+    }
+    
 }

@@ -20,6 +20,7 @@ import com.squareup.connect.models.Order;
 import com.squareup.connect.models.OrderLineItem;
 import com.squareup.connect.models.RetrieveTransactionResponse;
 import com.tcvcog.tcvce.application.BackingBeanUtils;
+import com.tcvcog.tcvce.util.Constants;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -38,10 +39,11 @@ public class SquareCheckoutCoordinator extends BackingBeanUtils implements Seria
     private final String FEE_QUANTITY = "1";
     private final String FEE_DESC = "Permit Application Fee";
     
-    private final String SANDBOX_TOKEN = "EAAAEZfNjdg56fhPorHJs2DiWe1QgK-m-RMfleLNzfOGovFUFzKsYu7BHGchDoOw";
-    private final String TEST_LOCATION = "CBASEPH5WFkfvzm9OJ8TtXhBle0gAQ";
+    // The values for these variables are stored in squarePayments.properties
+    private String SANDBOX_TOKEN;
+    private String TEST_LOCATION;    
+    private String REDIRECT_URL;
     
-    private final String REDIRECT_URL = "http://localhost:8080/tcvce/public/services/occPermitApplicationFlow/occPermitConfirmPayment.xhtml";
     private String generatedCheckoutId;
     
     public SquareCheckoutCoordinator(){
@@ -49,11 +51,12 @@ public class SquareCheckoutCoordinator extends BackingBeanUtils implements Seria
     }
     
     public void createCheckout() throws IOException{
+        
+        SANDBOX_TOKEN = getResourceBundle(Constants.SQUARE_PAYMENTS_PARAMS).getString("sandbox_token");
+        TEST_LOCATION = getResourceBundle(Constants.SQUARE_PAYMENTS_PARAMS).getString("test_location");
+        REDIRECT_URL = getResourceBundle(Constants.SQUARE_PAYMENTS_PARAMS).getString("redirect_url");        
     
         ApiClient defaultClient = Configuration.getDefaultApiClient();
-
-        defaultClient.setAccessToken(SANDBOX_TOKEN);
-        defaultClient.setAccessToken(SANDBOX_TOKEN);
         defaultClient.setAccessToken(SANDBOX_TOKEN);
 
         // Configure OAuth2 access token for authorization: oauth2
@@ -72,8 +75,7 @@ public class SquareCheckoutCoordinator extends BackingBeanUtils implements Seria
         lineItem.setQuantity(FEE_QUANTITY);
         lineItem.setBasePriceMoney(price);
         List<OrderLineItem> lineItems = new ArrayList<>();
-        lineItems.add(lineItem);
-        
+        lineItems.add(lineItem);        
         
 //         This needs to be set to work, but I have no idea why. CreateOrderRequestLineItem() is 
 //        marked as deprecated at https://github.com/square/connect-java-sdk/blob/master/docs/CreateOrderRequestLineItem.md

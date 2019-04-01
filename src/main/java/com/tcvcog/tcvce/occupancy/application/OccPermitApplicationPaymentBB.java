@@ -19,7 +19,7 @@ package com.tcvcog.tcvce.occupancy.application;
 
 import com.tcvcog.tcvce.application.BackingBeanUtils;
 import java.io.Serializable;
-import com.tcvcog.tcvce.coordinators.SquareCheckoutCoordinator;
+import com.tcvcog.tcvce.occupancy.coordinators.SquareCheckoutCoordinator;
 import java.io.IOException;
 
 /**

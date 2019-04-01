@@ -8,8 +8,7 @@
         <resource-bundle>
             <base-name>messagetext</base-name>
             <var>messagetext</var>
-        </resource-bundle>
-        
+        </resource-bundle>        
        
         <resource-bundle>
             <base-name>loggingcategories</base-name>
@@ -24,14 +23,17 @@
         <resource-bundle>
             <base-name>dbFixedValueLookup</base-name>
             <var>dbFixedValueLookup</var>
-        </resource-bundle>
-        
+        </resource-bundle>        
         
         <resource-bundle>
             <base-name>dbconnection</base-name>
             <var>dbConnectionParams</var>
         </resource-bundle>
-
+        
+        <resource-bundle>
+            <base-name>squarePayments</base-name>
+            <var>squarePaymentsParams</var>
+        </resource-bundle>
         
     </application>
     
@@ -203,6 +205,13 @@
         <managed-bean-name>paymentCoordinator</managed-bean-name>
         <managed-bean-class>com.tcvcog.tcvce.occupancy.coordinators.PaymentCoordinator</managed-bean-class>
         <managed-bean-scope>application</managed-bean-scope>
+    </managed-bean>
+    
+    
+    <managed-bean>
+        <managed-bean-name>squareCheckoutCoordinator</managed-bean-name>
+        <managed-bean-class>com.tcvcog.tcvce.occupancy.coordinators.SquareCheckoutCoordinator</managed-bean-class>
+        <managed-bean-scope>application</managed-bean-scope>        
     </managed-bean>
     <!--session-scoped beans-->
     
@@ -468,6 +477,12 @@
     <managed-bean>
         <managed-bean-name>occupancyInspectionFeeBB</managed-bean-name>
         <managed-bean-class>com.tcvcog.tcvce.occupancy.application.OccupancyInspectionFeeBB</managed-bean-class>
+        <managed-bean-scope>view</managed-bean-scope>
+    </managed-bean>
+    
+    <managed-bean>
+        <managed-bean-name>occPermitApplicationPaymentBB</managed-bean-name>
+        <managed-bean-class>com.tcvcog.tcvce.occupancy.application.OccPermitApplicationPaymentBB</managed-bean-class>
         <managed-bean-scope>view</managed-bean-scope>
     </managed-bean>
  
