@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.tcvcog.tcvce.occupancy.application;
 
 import com.tcvcog.tcvce.application.BackingBeanUtils;
@@ -52,11 +51,9 @@ public class OccPermitApplicationPaymentBB extends BackingBeanUtils implements S
         this.amount = amount;
     }
 
-    public void makePayment() throws IOException{
-        
+    public void makePayment() throws IOException{        
         SquareCheckoutCoordinator scc = getSquareCheckoutCoordinator();
-        scc.createCheckout();
-
+        scc.sendToCheckout();
     }
 
     /**
