@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.event.ActionEvent;
 import org.primefaces.event.FileUploadEvent;
@@ -67,7 +68,6 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
     private String violationTypeName;
     
     private Municipality selectedMuni;
-    private List<Municipality> muniList;
     
     private Property selectedProperty;
     
@@ -100,7 +100,7 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
         System.out.println("ActionRequestBean.ActionRequestBean");
         
         // init new, empty photo list
-        this.photoList = new ArrayList<>();
+        this.photoList = new ArrayList<>();    
     }
     
     public String getReturnValue(){
@@ -120,7 +120,7 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
     public String storeSelectedMuni(){
         CEActionRequest cear;
         CaseCoordinator cc = getCaseCoordinator();
-        cear = cc.getNewActionRequest();
+        cear = cc.getInititalizedCEActionRequest();
         cear.setDateOfRecordUtilDate(form_dateOfRecord);
         cear.setMuni(selectedMuni);
         getSessionBean().setCeactionRequestForSubmission(cear);
@@ -140,6 +140,9 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
     public String saveConcernDescriptions(){
 //        User u = getSessionBean().getFacesUser();
 //        if(u == null){
+        if(getSessionBean().getCeactionRequestForSubmission().getPhotoList() == null){
+            getSessionBean().getCeactionRequestForSubmission().setPhotoList(new ArrayList<Integer>());
+        }
             return "photoUpload";
 //            
 //        } else {
@@ -176,7 +179,7 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
     private void setupPersonEntry(){
         PersonCoordinator pc = getPersonCoordinator();
         Person p = pc.getNewPersonSkeleton(getSessionBean().getCeactionRequestForSubmission().getMuni());
-        p.setMuni(getSessionBean().getCeactionRequestForSubmission().getMuni());
+        p.setMuniCode(getSessionBean().getCeactionRequestForSubmission().getMuni().getMuniCode());
         getSessionBean().setPersonForCEActionRequestSubmission(p);
     }
     
@@ -184,9 +187,6 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
         if(ev == null){
             System.out.println("CEActionRequestBB.handlePhotoUpload | event: null");
             return;
-        }
-        if(getSessionBean().getCeactionRequestForSubmission().getPhotoList() == null){
-            getSessionBean().getCeactionRequestForSubmission().setPhotoList(new ArrayList<Integer>());
         }
         
         ImageServices is = getImageServices();
@@ -277,10 +277,11 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
             getSessionBean().setActiveRequest(ceari.getActionRequestByRequestID(submittedActionRequestID));
             
             // commit photos to db and link to request
-            for(Integer photoID : req.getPhotoList()){
-                is.commitPhotograph(photoID);
-                is.linkPhotoToActionRequest(photoID, submittedActionRequestID);
-            }
+            if(req.getPhotoList() == null || req.getPhotoList().isEmpty())
+                for(Integer photoID : req.getPhotoList()){
+                    is.commitPhotograph(photoID);
+                    is.linkPhotoToActionRequest(photoID, submittedActionRequestID);
+                }
                     
             // Now go right back to the DB and get the request we just submitted to verify before displaying the PACC
             getFacesContext().addMessage(null,
@@ -604,26 +605,9 @@ public class CEActionRequestSubmitBB extends BackingBeanUtils implements Seriali
         this.selectedMuni = selectedMuni;
     }
 
-    /**
-     * @return the muniList
-     */
-    public List<Municipality> getMuniList() {
-        MunicipalityIntegrator mi = getMunicipalityIntegrator();
-        try {
-            muniList = mi.getCompleteMuniList();
-        } catch (IntegrationException ex) {
-            System.out.println(ex);
-        }
-        return muniList;
-    }
+    
 
-    /**
-     * @param muniList the muniList to set
-     */
-    public void setMuniList(List<Municipality> muniList) {
-        this.muniList = muniList;
-    }
-
+   
     /**
      * @return the violationTypeMap
      */

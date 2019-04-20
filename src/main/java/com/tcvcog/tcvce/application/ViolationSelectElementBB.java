@@ -50,7 +50,7 @@ public class ViolationSelectElementBB extends BackingBeanUtils implements Serial
         ViolationCoordinator vc = getViolationCoordinator();
         CodeViolation cv;
         if (selectedViolatedEnfElement != null && getSessionBean() != null) {
-             cv = vc.generateNewCodeViolation(getSessionBean().getcECase(), 
+             cv = vc.generateNewCodeViolation(getSessionBean().getcECaseQueue().get(0),
                     selectedViolatedEnfElement);
             getSessionBean().setActiveCodeViolation(cv);
 //            System.out.println("ViolationSelectElementBB.useSelectedElement | Selected Enf Element: "
@@ -60,7 +60,7 @@ public class ViolationSelectElementBB extends BackingBeanUtils implements Serial
         } else {
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                            "Ooops: Can't continue -- Please select an element from the list.", ""));
+                            "Oops: Can't continue -- Please select an element from the list.", ""));
             return "";
         }
 

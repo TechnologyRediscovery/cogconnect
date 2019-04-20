@@ -23,12 +23,14 @@ import com.tcvcog.tcvce.coordinators.EventCoordinator;
 import com.tcvcog.tcvce.coordinators.PersonCoordinator;
 import com.tcvcog.tcvce.coordinators.PropertyCoordinator;
 import com.tcvcog.tcvce.coordinators.PublicInfoCoordinator;
+import com.tcvcog.tcvce.coordinators.SessionSystemCoordinator;
 import java.io.Serializable;
 import javax.faces.context.FacesContext;
 import javax.faces.application.Application;
 import java.sql.Connection;
 import com.tcvcog.tcvce.coordinators.UserCoordinator;
 import com.tcvcog.tcvce.coordinators.ViolationCoordinator;
+import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.User;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
@@ -60,11 +62,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.ResourceBundle;
 import javax.el.ValueExpression;
-import javax.faces.bean.ManagedBean;
-import javax.faces.bean.ManagedProperty;
-import javax.faces.bean.SessionScoped;
 import javax.faces.context.ExternalContext;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -113,8 +114,9 @@ public class BackingBeanUtils implements Serializable{
     private PaymentIntegrator paymentIntegrator;
     private OccupancyCoordinator occupancyCoordinator;
     
-    // system integrators
+    // system 
     private SystemIntegrator systemIntegrator;
+    private SessionSystemCoordinator ssCoordinator;
     private LogIntegrator logIntegrator;
     
     private SearchCoordinator searchCoordinator;
@@ -162,21 +164,20 @@ public class BackingBeanUtils implements Serializable{
         return bundle;
     }
     
-    /**
-     * A hacky way of creating a temporary User object who only
-     * has an ID number and no access permissions or ID info. Used for inserting
-     * events by public folks who don't have an actual User in the system.
-     * The ID of this user is pulled from the message bundles.
-     * @return the system robot user with only an ID number
-     */
-    public User getSystemRobotUser(){
-        User u = new User();
-        u.setUserID(Integer.parseInt(
-                getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
-                        .getString("cogRobotUserID")));
         
-        return u;
+    public boolean isMunicodeInMuniList(int muniCode, List<Municipality> muniList){
+        Municipality m;
+        boolean isInList = false;
+        Iterator<Municipality> iter = muniList.iterator();
+        while(iter.hasNext()){
+            m = iter.next();
+            if(m.getMuniCode() == muniCode){
+                isInList = true;
+            }
+        }
+        return isInList;
     }
+    
     
     
     public void setUserCoordinator(UserCoordinator userCoordinator){
@@ -227,9 +228,9 @@ public class BackingBeanUtils implements Serializable{
         sb.append("<br/>");
         sb.append("--------------------------------------<br/>");
         sb.append(getResourceBundle(Constants.MESSAGE_TEXT).getString("signatureLeader"));
-        sb.append(getFacesUser().getFName());
+        sb.append(getFacesUser().getPerson().getFirstName());
         sb.append(" ");
-        sb.append(getFacesUser().getLName());
+        sb.append(getFacesUser().getPerson().getLastName());
         sb.append(" at ");
         sb.append(getPrettyDate(LocalDateTime.now()));
         sb.append("<br/>");
@@ -837,6 +838,23 @@ public class BackingBeanUtils implements Serializable{
      */
     public void setOccupancyCoordinator(OccupancyCoordinator occupancyCoordiator) {
         this.occupancyCoordinator = occupancyCoordiator;
+    }
+/**
+     * @return the ssCoordinator
+     */
+    public SessionSystemCoordinator getSsCoordinator() {
+        FacesContext context = getFacesContext();
+        ValueExpression ve = context.getApplication().getExpressionFactory()
+                .createValueExpression(context.getELContext(), "#{sessionSystemCoordinator}", SessionSystemCoordinator.class);
+        ssCoordinator = (SessionSystemCoordinator) ve.getValue(context.getELContext());
+        return ssCoordinator;
+    }
+
+    /**
+     * @param ssCoordinator the ssCoordinator to set
+     */
+    public void setSsCoordinator(SessionSystemCoordinator ssCoordinator) {
+        this.ssCoordinator = ssCoordinator;
     }
 
        

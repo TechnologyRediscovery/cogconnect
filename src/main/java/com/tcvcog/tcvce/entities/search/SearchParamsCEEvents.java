@@ -5,14 +5,11 @@
  */
 package com.tcvcog.tcvce.entities.search;
 
-import com.tcvcog.tcvce.entities.CECase;
-import com.tcvcog.tcvce.entities.CasePhase;
 import com.tcvcog.tcvce.entities.EventCategory;
-import com.tcvcog.tcvce.entities.Municipality;
+import com.tcvcog.tcvce.entities.EventType;
+import com.tcvcog.tcvce.entities.Person;
+import com.tcvcog.tcvce.entities.User;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
 
 /**
  *
@@ -20,32 +17,54 @@ import java.util.List;
  */
 public class SearchParamsCEEvents extends SearchParams implements Serializable{
     
+    private boolean useRespondedAtDateRange;
+    
     private boolean filterByEventCategory;
-    private boolean filterByEventType;
     private EventCategory eventCategory;
+    
+    private boolean filterByEventType;
+    private EventType evtType;
+    
     
     private boolean filterByCaseID;
     private int caseId;
     
     private boolean filterByEventOwner;
-    private int ownerUserID;   
+    private User user;
   
+    private boolean filterByPerson;
+    private Person person;
+    
     private boolean filterByActive;
     private boolean isActive;
-    
-    private boolean filterByRequiresViewConfirmation;
-    private boolean isViewConfirmationRequired;
     
     private boolean filterByHidden;
     private boolean isHidden;
     
-    private boolean filterByViewed;
-    private boolean isViewed;
+    // main control for follow-up event request parameter activation
+    private boolean filterByrequestsAction;
+    private boolean requestsAction;
     
-    private boolean filterByViewConfirmedBy;
-    private int confirmerUserID;
+    // these search parameters are only valid for events that request
+    // a follow-up action
     
-    private boolean filterByViewConfirmedAtDateRange;
+    private boolean filterByHasResponseEvent;
+    private boolean hasResponseEvent;
+
+    // use the EventCategory and EventType fields above to query the 
+    // event category or type of the requested follow-up event
+    private boolean filterByRequestedResponseEventCat;
+    
+    // we have a User type memvar called user. These switches can
+    // determine which db field the user is queried against
+    private boolean filterByRequestor;
+    private boolean filterByResponderIntended;
+    private boolean filterByResponderActual;
+
+    private boolean filterByRejectedRequest;
+    private boolean rejectedRequest;
+    
+    
     
    public SearchParamsCEEvents(){
        
@@ -89,8 +108,8 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     /**
      * @return the ownerUserID
      */
-    public int getOwnerUserID() {
-        return ownerUserID;
+    public User getUser() {
+        return user;
     }
 
     /**
@@ -108,17 +127,17 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     }
 
     /**
-     * @return the filterByRequiresViewConfirmation
+     * @return the filterByrequestsAction
      */
-    public boolean isFilterByRequiresViewConfirmation() {
-        return filterByRequiresViewConfirmation;
+    public boolean isFilterByrequestsAction() {
+        return filterByrequestsAction;
     }
 
     /**
-     * @return the isViewConfirmationRequired
+     * @return the requestsAction
      */
-    public boolean isIsViewConfirmationRequired() {
-        return isViewConfirmationRequired;
+    public boolean isRequestsAction() {
+        return requestsAction;
     }
 
     /**
@@ -136,24 +155,18 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     }
 
     /**
-     * @return the filterByViewConfirmedBy
+     * @return the filterByPerson
      */
-    public boolean isFilterByViewConfirmedBy() {
-        return filterByViewConfirmedBy;
+    public boolean isFilterByPerson() {
+        return filterByPerson;
     }
 
+    
     /**
-     * @return the confirmerUserID
+     * @return the useRespondedAtDateRange
      */
-    public int getConfirmerUserID() {
-        return confirmerUserID;
-    }
-
-    /**
-     * @return the filterByViewConfirmedAtDateRange
-     */
-    public boolean isFilterByViewConfirmedAtDateRange() {
-        return filterByViewConfirmedAtDateRange;
+    public boolean isUseRespondedAtDateRange() {
+        return useRespondedAtDateRange;
     }
 
     /**
@@ -194,8 +207,8 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     /**
      * @param ownerUserID the ownerUserID to set
      */
-    public void setOwnerUserID(int ownerUserID) {
-        this.ownerUserID = ownerUserID;
+    public void setOwnerUserID(User ownerUserID) {
+        this.setUser(ownerUserID);
     }
 
     /**
@@ -213,17 +226,17 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     }
 
     /**
-     * @param filterByRequiresViewConfirmation the filterByRequiresViewConfirmation to set
+     * @param filterByrequestsAction the filterByrequestsAction to set
      */
-    public void setFilterByRequiresViewConfirmation(boolean filterByRequiresViewConfirmation) {
-        this.filterByRequiresViewConfirmation = filterByRequiresViewConfirmation;
+    public void setFilterByrequestsAction(boolean filterByrequestsAction) {
+        this.filterByrequestsAction = filterByrequestsAction;
     }
 
     /**
-     * @param isViewConfirmationRequired the isViewConfirmationRequired to set
+     * @param requestsAction the requestsAction to set
      */
-    public void setIsViewConfirmationRequired(boolean isViewConfirmationRequired) {
-        this.isViewConfirmationRequired = isViewConfirmationRequired;
+    public void setRequestsAction(boolean requestsAction) {
+        this.requestsAction = requestsAction;
     }
 
     /**
@@ -241,24 +254,18 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     }
 
     /**
-     * @param filterByViewConfirmedBy the filterByViewConfirmedBy to set
+     * @param filterByPerson the filterByPerson to set
      */
-    public void setFilterByViewConfirmedBy(boolean filterByViewConfirmedBy) {
-        this.filterByViewConfirmedBy = filterByViewConfirmedBy;
+    public void setFilterByPerson(boolean filterByPerson) {
+        this.filterByPerson = filterByPerson;
     }
 
+   
     /**
-     * @param confirmerUserID the confirmerUserID to set
+     * @param useRespondedAtDateRange the useRespondedAtDateRange to set
      */
-    public void setConfirmerUserID(int confirmerUserID) {
-        this.confirmerUserID = confirmerUserID;
-    }
-
-    /**
-     * @param filterByViewConfirmedAtDateRange the filterByViewConfirmedAtDateRange to set
-     */
-    public void setFilterByViewConfirmedAtDateRange(boolean filterByViewConfirmedAtDateRange) {
-        this.filterByViewConfirmedAtDateRange = filterByViewConfirmedAtDateRange;
+    public void setUseRespondedAtDateRange(boolean useRespondedAtDateRange) {
+        this.useRespondedAtDateRange = useRespondedAtDateRange;
     }
 
     /**
@@ -276,31 +283,156 @@ public class SearchParamsCEEvents extends SearchParams implements Serializable{
     }
 
     /**
-     * @return the filterByViewed
+     * @return the filterByHasResponseEvent
      */
-    public boolean isFilterByViewed() {
-        return filterByViewed;
+    public boolean isFilterByHasResponseEvent() {
+        return filterByHasResponseEvent;
     }
 
     /**
-     * @return the isViewed
+     * @return the hasResponseEvent
      */
-    public boolean isIsViewed() {
-        return isViewed;
+    public boolean isHasResponseEvent() {
+        return hasResponseEvent;
     }
 
     /**
-     * @param filterByViewed the filterByViewed to set
+     * @param filterByHasResponseEvent the filterByHasResponseEvent to set
      */
-    public void setFilterByViewed(boolean filterByViewed) {
-        this.filterByViewed = filterByViewed;
+    public void setFilterByHasResponseEvent(boolean filterByHasResponseEvent) {
+        this.filterByHasResponseEvent = filterByHasResponseEvent;
     }
 
     /**
-     * @param isViewed the isViewed to set
+     * @param hasResponseEvent the hasResponseEvent to set
      */
-    public void setIsViewed(boolean isViewed) {
-        this.isViewed = isViewed;
+    public void setHasResponseEvent(boolean hasResponseEvent) {
+        this.hasResponseEvent = hasResponseEvent;
+    }
+
+    /**
+     * @return the evtType
+     */
+    public EventType getEvtType() {
+        return evtType;
+    }
+
+    /**
+     * @param evtType the evtType to set
+     */
+    public void setEvtType(EventType evtType) {
+        this.evtType = evtType;
+    }
+
+    /**
+     * @return the person
+     */
+    public Person getPerson() {
+        return person;
+    }
+
+    /**
+     * @param person the person to set
+     */
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+
+    /**
+     * @param user the user to set
+     */
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+   
+
+    /**
+     * @return the filterByRejectedRequest
+     */
+    public boolean isFilterByRejectedRequest() {
+        return filterByRejectedRequest;
+    }
+
+    /**
+     * @param filterByRejectedRequest the filterByRejectedRequest to set
+     */
+    public void setFilterByRejectedRequest(boolean filterByRejectedRequest) {
+        this.filterByRejectedRequest = filterByRejectedRequest;
+    }
+
+    /**
+     * @return the rejectedRequest
+     */
+    public boolean isRejectedRequest() {
+        return rejectedRequest;
+    }
+
+    /**
+     * @param rejectedRequest the rejectedRequest to set
+     */
+    public void setRejectedRequest(boolean rejectedRequest) {
+        this.rejectedRequest = rejectedRequest;
+    }
+
+    /**
+     * @return the filterByRequestedResponseEventCat
+     */
+    public boolean isFilterByRequestedResponseEventCat() {
+        return filterByRequestedResponseEventCat;
+    }
+
+    
+    
+
+    /**
+     * @return the filterByRequestor
+     */
+    public boolean isFilterByRequestor() {
+        return filterByRequestor;
+    }
+
+    /**
+     * @return the filterByResponderIntended
+     */
+    public boolean isFilterByResponderIntended() {
+        return filterByResponderIntended;
+    }
+
+    /**
+     * @return the filterByResponderActual
+     */
+    public boolean isFilterByResponderActual() {
+        return filterByResponderActual;
+    }
+
+    /**
+     * @param filterByRequestedResponseEventCat the filterByRequestedResponseEventCat to set
+     */
+    public void setFilterByRequestedResponseEventCat(boolean filterByRequestedResponseEventCat) {
+        this.filterByRequestedResponseEventCat = filterByRequestedResponseEventCat;
+    }
+
+
+    /**
+     * @param filterByRequestor the filterByRequestor to set
+     */
+    public void setFilterByRequestor(boolean filterByRequestor) {
+        this.filterByRequestor = filterByRequestor;
+    }
+
+    /**
+     * @param filterByResponderIntended the filterByResponderIntended to set
+     */
+    public void setFilterByResponderIntended(boolean filterByResponderIntended) {
+        this.filterByResponderIntended = filterByResponderIntended;
+    }
+
+    /**
+     * @param filterByResponderActual the filterByResponderActual to set
+     */
+    public void setFilterByResponderActual(boolean filterByResponderActual) {
+        this.filterByResponderActual = filterByResponderActual;
     }
    
    

@@ -9,8 +9,9 @@
     <h:head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <h:outputStylesheet name="css/style.css"/>
-        <title>Code Enforcement</title>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+        <title>CCOGConnect</title>
+      
 
     </h:head>
     <h:body>
@@ -19,7 +20,13 @@
                 <div class="flexing-box-topbar">
                     <f:view id="navview">
                         <div class="logoBox">
-                            <h2 id="logoHeader" style="font-weight: bold;">COGBase Municipal Data Hub<br />Turtle Creek Valley Council of Governments</h2>
+                            <div class="logo-image-wrapper">
+                                <h:graphicImage value="/images/tcvcog_logo_inverted.jpg" height="50"/>
+                            </div>
+                            <div class="logo-title-wrapper">
+                                <div class="sys-title" style="font-weight: bold;">COG Connect: Municipal code enforcement data platform</div>
+                                <div class="sys-title-sub">Turtle Creek Valley Council of Governments</div>
+                            </div>
                         </div>
                     </f:view>
                 </div>
@@ -44,7 +51,7 @@
                                 <p:submenu label="Code Enf" icon="fa fa-bullhorn">
                                     <p:menuitem value="CE Requests" action="cEActionRequests"  ajax="false" icon="fa fa-sign-in"/>
                                     <p:menuitem value="CE Cases" action="ceCases"  ajax="false" icon="fa fa-suitcase"/>
-                                    <p:menuitem value="CE Events" action="ceCases"  ajax="false" icon="fa fa-calendar"/>
+                                    <p:menuitem value="CE Events" action="ceEvents"  ajax="false" icon="fa fa-calendar"/>
                                     
                                     <p:submenu label="CE Configuration">
                                         <p:menuitem value="CE event config" action="eventManage" ajax="false" icon="fa fa-sliders" />
@@ -70,13 +77,10 @@
 
 
                                 <p:submenu label="Occupancy" icon="fa fa-list-alt" >
-                                    <p:menuitem value="Applications" action="occPermitApplications" ajax="false" icon="ui-icon-document" disabled="true"/>
-                                    <p:menuitem value="Open inspections" action="occInspections" ajax="false" icon="ui-icon-home" disabled="true" />
-                                    <p:menuitem value="New inspection" action="occInspectionAdd" ajax="false" icon="ui-icon-document" disabled="true"/>
-                                    <p:menuitem value="Current inspection" action="occProfile" ajax="false" icon="ui-icon-arrowthick-1-s" disabled="true"/>
+                                    <p:menuitem value="Inspections" action="occInspections" ajax="false" icon="ui-icon-home" disabled="true" />
                                     <p:menuitem value="Checklists"  action="checklists" ajax="false" icon="ui-icon-wrench" disabled="true"/>
-                                    <p:menuitem value="Payments" action="payments" ajax="false" icon="ui-icon-wrench" disabled="true"/>
-                                    <p:menuitem value="Fee config" action="feeManage" ajax="false" icon="ui-icon-wrench" disabled="true"/>
+                                    <p:menuitem value="Payments" action="payments" ajax="false" icon="ui-icon-wrench" disabled="false"/>
+                                    <p:menuitem value="Fee config" action="feeManage" ajax="false" icon="ui-icon-wrench" disabled="false"/>
                                     <p:menuitem value="Permits config"  action="occPermitTypeManage" ajax="false" icon="ui-icon-wrench" disabled="true"/>
                                 </p:submenu>
                                  
@@ -108,6 +112,7 @@
                                     <p:menuitem value="User-Munis" action="userMuniMapping" ajax="false" icon="fa fa-id-card" />
                                     <p:menuitem value="Muni info" action="muniManage" ajax="false" icon="fa fa-univsity" disabled="false"/>
                                     <p:menuitem value="Request list changes" action="selectItemListChange" ajax="false" icon="fa fa-list" />
+                                    <p:menuitem value="Mange icons" action="iconManage" ajax="false" icon="fa fa-list" />
                                 </p:submenu>
                                 <p:submenu label="Help" icon="fa fa-question-circle">
                                     <p:menuitem value="Report a bug" action="bugReporting" ajax="false" icon="ui-icon-arrowthick-1-s" />
@@ -118,7 +123,7 @@
                                 <f:facet name="options">
                                     <p:commandButton 
                                                      action="#{missionControlBB.logout}" 
-                                                     value="Logout: #{facesUser.FName}"
+                                                     value="Logout: #{facesUser.person.firstName}"
                                                      ajax="false"/>
                                 </f:facet>
                             </p:menubar>

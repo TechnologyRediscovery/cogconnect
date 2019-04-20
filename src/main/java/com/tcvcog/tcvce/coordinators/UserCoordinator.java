@@ -28,7 +28,10 @@ import javax.inject.Named;
 import com.tcvcog.tcvce.entities.User;
 import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
 import com.tcvcog.tcvce.integration.UserIntegrator;
+import com.tcvcog.tcvce.util.Constants;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -37,6 +40,7 @@ import java.util.ArrayList;
 @ApplicationScoped
 @Named("userCoordinator")
 public class UserCoordinator extends BackingBeanUtils implements Serializable {
+    final int MIN_PSSWD_LENGTH = 8;
     
     /**
      * Creates a new instance of UserCoordinator
@@ -44,6 +48,58 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
     public UserCoordinator(){
     
     }    
+    
+    public int insertNewUser(User u) throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        String tempPassword = String.valueOf(getControlCodeFromTime());
+        u.setPassword(tempPassword);
+        int newUserID = ui.insertUser(u);
+        return newUserID;
+        
+        
+    }
+    
+    /**
+     * The COGBot is a user that exists only in cyberspace and is used 
+     * as the owner of events created by the public and can also make requests
+     * to users at various times for various reasons. No human should ever
+     * attempt to take on the role of the COGBot for risk of becoming a cyborg
+     * is, indeed, very great.
+     * @return
+     * @throws IntegrationException 
+     */
+    public User getCogBotUser() throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        User u;
+        u = ui.getUser(Integer.parseInt(
+                getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
+                        .getString("cogRobotUserID")));
+        return u;
+    }
+    
+  
+    
+    
+    public void updateUser(User u) throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        ui.updateUser(u);
+    }
+    
+    public void updateUserPassword(User u, String pw) throws IntegrationException, AuthorizationException{
+        UserIntegrator ui = getUserIntegrator();
+        if(pw.length() >= MIN_PSSWD_LENGTH){
+            ui.setUserPassword(u, pw);
+        } else {
+            throw new AuthorizationException("Password must be at least " + MIN_PSSWD_LENGTH + " characters");
+        }
+    }
+    
+    public User getUserSkeleton(){
+        User u = new User();
+        u.setActivityStartDate(LocalDateTime.now());
+        u.setActivityStopDate(LocalDateTime.now().plusYears(1));
+        return u;
+    }
    
     /**
      * Primary user retrieval method: Note that there aren't as many checks here
@@ -77,6 +133,24 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                     + "Eric Darsow at 412.923.9907.");
         }
     }
+    
+    public Municipality getDefaultyMuni(User u) throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        return ui.getDefaultMunicipality(u);
+    }
+    
+    public boolean setDefaultMuni(User u, Municipality m) throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        return ui.setDefaultMunicipality(u, m);
+        
+    }
+    
+    public List<Municipality> getUserAuthMuniList(int userID) throws IntegrationException{
+        UserIntegrator ui = getUserIntegrator();
+        List<Municipality> ml = ui.getUserAuthMunis(userID);
+        return ml;
+    }
+    
     
     /**
      * Container for all access control mechanism authorization switches
@@ -162,13 +236,12 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
      *     access to  
      * @throws IntegrationException 
      */
-    public ArrayList<Municipality> getUnauthorizedMunis(User u) throws IntegrationException {
-        System.out.println("UserCoordinator.getUnauthorizedMunis | " + u.getUsername());
+    public List<Municipality> getUnauthorizedMunis(User u) throws IntegrationException {
         
         UserIntegrator ui = getUserIntegrator();
-        ArrayList<Municipality> authMunis = ui.getUserAuthMunis(u.getUserID());        
+        List<Municipality> authMunis = ui.getUserAuthMunis(u.getUserID());        
         MunicipalityIntegrator mi = getMunicipalityIntegrator();
-        ArrayList<Municipality> munis = mi.getCompleteMuniList();
+        List<Municipality> munis = mi.getMuniList();
         
         if(authMunis != null){
             for(Municipality authMuni:authMunis){
@@ -177,5 +250,7 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
         }        
         return munis;
     }
+    
+    
     
 } // close class

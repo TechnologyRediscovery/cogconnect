@@ -26,6 +26,7 @@ import com.tcvcog.tcvce.entities.PersonType;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.search.SearchParamsPersons;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
+import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
 import com.tcvcog.tcvce.integration.UserIntegrator;
 import com.tcvcog.tcvce.util.Constants;
@@ -34,6 +35,7 @@ import java.io.Serializable;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
@@ -52,6 +54,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
     private PersonType[] personTypes;
     private String notesToAppend;
     private String updateDescription;
+    private Map<String, Integer> muniNameIDMap;
     
     private SearchParamsPersons searchParams;
     
@@ -66,12 +69,15 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
     @PostConstruct
     public void initBean(){
         PersonCoordinator pc = getPersonCoordinator();
-        PersonIntegrator pi = getPersonIntegrator();
+        MunicipalityIntegrator mi = getMunicipalityIntegrator();
         searchParams = pc.getDefaultSearchParamsPersons(getSessionBean().getActiveMuni());
         // the selected person should be initiated using logic in getSelectedPerson
-        selectedPerson = getSessionBean().getActivePerson();
-        
-        
+        selectedPerson = getSessionBean().getPersonQueue().get(0);
+        try {
+            muniNameIDMap = mi.getMunicipalityStringIDMap();
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+        }
     }
     
     public String viewPersonAssociatedProperty(Property p){
@@ -92,7 +98,6 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
                     , "Unable to update notes, sorry!"
                     , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
     }
     
     
@@ -116,23 +121,17 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
             
         }
         return "persons";
+    }
+    
+    public void initiatePersonUpdate(ActionEvent ev){
         
         
     }
     
-    public String initiatePersonUpdate(){
-        getSessionBean().setActivePerson(selectedPerson);
-        return "personAdd";
-        
-    }
-    
-    public String initiatePersonCreation(){
+    public void initiatePersonCreation(ActionEvent ev){
         PersonCoordinator pc = getPersonCoordinator();
-        getSessionBean().setActivePerson(pc.getNewPersonSkeleton(getSessionBean().getActiveMuni()));
-        return "personAdd";
-        
-        
-        
+        selectedPerson = pc.getNewPersonSkeleton(getSessionBean().getActiveMuni());
+        System.out.println("PersonsBB.initiatePersonCreation : selected person id: " + selectedPerson.getPersonID());
     }
     
     public void loadPersonHistory(ActionEvent ev){
@@ -164,7 +163,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
             selectedPerson = pi.getPerson(newPersonID);
             System.out.println("PersonsBB.createNewPerson | newly inserted personID: " + selectedPerson.getPersonID());
             getSessionBean().setActivePerson(selectedPerson);
-            getSessionBean().getActivePersonList().add(selectedPerson);
+            getSessionBean().getPersonQueue().add(selectedPerson);
             
             
 //            ui.logObjectView(getSessionBean().getFacesUser(), selectedPerson);
@@ -186,7 +185,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
         System.out.println("PersonBB.searchForPersons");
         // clear past search results on bean and on the session
         personList = null;
-        getSessionBean().setActivePersonList(null);
+        getSessionBean().setPersonQueue(null);
         // this will trigger database lookup logic inside
         // getPersonList() when we tell the search result table to clear itself
     }
@@ -198,7 +197,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
         searchParams = pc.getDefaultSearchParamsPersons(getSessionBean().getActiveMuni());
         // clear past search results on bean and on the session
         personList = null;
-        getSessionBean().setActivePersonList(null);
+        getSessionBean().setPersonQueue(null);
         // this will trigger database lookup logic inside
         // getPersonList() when we tell the search result table to clear itself
     }
@@ -249,7 +248,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
 
         System.out.println("PersonBB.getPersonList");
         PersonIntegrator integrator = getPersonIntegrator();
-        List<Person> sessionPersonList = getSessionBean().getActivePersonList();
+        List<Person> sessionPersonList = getSessionBean().getPersonQueue();
 
         // first check if our view-scoped list is emtpy, if so, we need a list!
         if (personList == null) {
@@ -260,7 +259,7 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
             } else {
                 try {
                     personList = integrator.getPersonList(searchParams); // go to Integrator with searchParams
-                    getSessionBean().setActivePersonList(personList);
+                    getSessionBean().setPersonQueue(personList);
                     if (personList.isEmpty()) {
                         System.out.println("PersonBB.getPersonList | Emtpy list");
                         getFacesContext().addMessage(null,
@@ -383,6 +382,20 @@ public class PersonsBB extends BackingBeanUtils implements Serializable{
      */
     public void setUpdateDescription(String updateDescription) {
         this.updateDescription = updateDescription;
+    }
+
+    /**
+     * @return the muniNameIDMap
+     */
+    public Map<String, Integer> getMuniNameIDMap() {
+        return muniNameIDMap;
+    }
+
+    /**
+     * @param muniNameIDMap the muniNameIDMap to set
+     */
+    public void setMuniNameIDMap(Map<String, Integer> muniNameIDMap) {
+        this.muniNameIDMap = muniNameIDMap;
     }
     
 }

@@ -4,6 +4,7 @@ package com.tcvcog.tcvce.application;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CEActionRequest;
 import com.tcvcog.tcvce.entities.CECase;
+import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.Photograph;
 import com.tcvcog.tcvce.entities.Property;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.component.UIInput;
 import javax.faces.event.ActionEvent;
@@ -46,6 +48,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     
     private PropertyWithLists currProp;
     private ArrayList<Person> filteredPersonList;
+    private ArrayList<Person> pList;
     
     private String parid;
     private String address;
@@ -58,10 +61,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     private List<Property> filteredPropList;
     private UIInput addressInput;
     
-    private ArrayList<CEActionRequest> ceActionRequestList;
-
-    private int selectedMuniCode;
-    private CECase selectedCECase;
+    private Municipality selectedMuni;
 
 
     
@@ -71,8 +71,12 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     public PropertyProfileBB() {
     }
     
+    @PostConstruct
+    public void initBean(){
+        this.currProp = getSessionBean().getActivePropWithLists();
+    }
 
-     public void searchForProperties(ActionEvent event){
+    public void searchForProperties(ActionEvent event){
         System.out.println("PropSearchBean.searchForPropertiesSingleMuni");
         PropertyIntegrator pi = new PropertyIntegrator();
         
@@ -87,6 +91,11 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
                 new FacesMessage(FacesMessage.SEVERITY_ERROR, 
                         "Unable to complete search! ", ""));
         }
+    }
+    
+    public String addProperty(){
+        //getSessionBean().setActiveProp(new Property());  // we do this after the prop has been inserted
+        return "propertyAdd";
     }
     
     public String openCECase(){
@@ -141,7 +150,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     }
     
     public String updateProperty(){
-        getSessionBean().setActivePropWithList(currProp);
+        getSessionBean().setActivePropWithLists(currProp);
         System.out.println("PropertyProfileBB.updateProperty");
         return "propertyUpdate";
         
@@ -213,12 +222,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         return addressInput;
     }
 
-    /**
-     * @return the selectedMuniCode
-     */
-    public int getSelectedMuniCode() {
-        return selectedMuniCode;
-    }
+   
 
     /**
      * @param parid the parid to set
@@ -276,24 +280,13 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         this.filteredPropList = filteredPropList;
     }
 
-    /**
-     * @param addressInput the addressInput to set
-     */
-
-    public void setSelectedCECase(CECase selectedCECase) {
-        this.selectedCECase = selectedCECase;
-    }
+    
 
     public void setAddressInput(UIInput addressInput) {
         this.addressInput = addressInput;
     }
 
-    /**
-     * @param selectedMuniCode the selectedMuniCode to set
-     */
-    public void setSelectedMuniCode(int selectedMuniCode) {
-        this.selectedMuniCode = selectedMuniCode;
-    }
+   
 
    
 
@@ -310,6 +303,38 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
      */
     public void setFilteredPersonList(ArrayList<Person> filteredPersonList) {
         this.filteredPersonList = filteredPersonList;
+    }
+
+    /**
+     * @return the pList
+     */
+    public ArrayList<Person> getpList() throws IntegrationException {
+            PropertyIntegrator pi = getPropertyIntegrator();
+        if(pList == null || currProp == null){
+            pList= pi.getPersonIntegrator().getPersonList(selectedMuni.getMuniCode());
+        }
+        return pList;
+    }
+
+    /**
+     * @param pList the pList to set
+     */
+    public void setpList(ArrayList<Person> pList) {
+        this.pList = pList;
+    }
+
+    /**
+     * @return the selectedMuni
+     */
+    public Municipality getSelectedMuni() {
+        return selectedMuni;
+    }
+
+    /**
+     * @param selectedMuni the selectedMuni to set
+     */
+    public void setSelectedMuni(Municipality selectedMuni) {
+        this.selectedMuni = selectedMuni;
     }
 
    

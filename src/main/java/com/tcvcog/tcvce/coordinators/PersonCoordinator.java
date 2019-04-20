@@ -30,6 +30,7 @@ import com.tcvcog.tcvce.util.MessageBuilderParams;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -100,6 +101,7 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
         newP.setBusinessEntity(false);
         newP.setCompositeLastName(false);
         newP.setUseSeparateMailingAddress(false);
+        newP.setMuniCode(m.getMuniCode());
         newP.setAddressState("PA");
         return newP;
         
@@ -122,9 +124,9 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
         sb.append(previousNotes);
         sb.append("<br/>**************************************<br/>");
         sb.append("NOTE CREATED BY: ");
-        sb.append(getSessionBean().getFacesUser().getFName());
+        sb.append(getSessionBean().getFacesUser().getPerson().getFirstName());
         sb.append(" ");
-        sb.append(getSessionBean().getFacesUser().getLName());
+        sb.append(getSessionBean().getFacesUser().getPerson().getLastName());
         sb.append(" (User ID ");
         sb.append(String.valueOf(getSessionBean().getFacesUser().getUserID()));
         sb.append(") on ");
@@ -136,12 +138,32 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
         return sb.toString();
         
     }
+    
+    public int createChostPerson(Person p, User u) throws IntegrationException{
+        PersonIntegrator pi = getPersonIntegrator();
+        int newGhostID = pi.createGhost(p, u);
+        return newGhostID;        
+        
+    }
+    
+    public int createClonedPerson(Person p, User u) throws IntegrationException{
+        PersonIntegrator pi = getPersonIntegrator();
+        int newCloneID = pi.createClone(p, u);
+        return newCloneID;
+    }
+    
+    public List<Person> loadPersonHistoryList(User u) throws IntegrationException{
+        PersonIntegrator pi = getPersonIntegrator();
+        return pi.getPersonHistory(u);
+        
+    }
+    
+    
 
     /**
      * @return the personTypes
      */
     public PersonType[] getPersonTypes() {
-        ArrayList<PersonType> al = new ArrayList<>();
         personTypes = PersonType.values();
         return personTypes;
     }
