@@ -10,7 +10,9 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <h:outputStylesheet name="css/style.css"/>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet"/>
         <title>CCOGConnect</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> 
       
 
     </h:head>
@@ -141,16 +143,18 @@
                                 </div>
 
                                 <div class="activeObjectBox">
-                                    <h:outputText styleClass="infoBarDataLabel" value="property: "/>
-                                    <h:outputText styleClass="infoBarData" value="#{sessionBean.activeProp.address} "/> 
-                                    <h:outputText styleClass="infoBarData" value="(#{sessionBean.activeProp.muni.muniName})  "/>
                                     <ui:remove>
+                                        <h:outputText styleClass="infoBarDataLabel" value="property: "/>
+                                        <h:outputText styleClass="infoBarData" value="#{sessionBean.activeProp.address} "/> 
+                                        <h:outputText styleClass="infoBarData" value="(#{sessionBean.activeProp.muni.muniName})  "/>
 
                                         <p:commandButton styleClass="sessionInfoButton" action="#{navigationBB.gotoPropertyProfile}" value="profile" ajax="false" icon="fa fa-home" disabled="#{navigationBB.noActiveProperty}"/>
                                         <p:commandButton styleClass="sessionInfoButton" action="propertySearch" value="change prop" ajax="false" icon="fa fa-search"/>
                                     </ui:remove>
                                 </div>
                                
+                                <ui:remove>
+                                    
                                 <div class="activeObjectBox">
                                     <h:outputText styleClass="infoBarDataLabel" value="case: " />
 
@@ -165,6 +169,7 @@
                                                      ajax="false"
                                                      disabled="#{navigationBB.noActiveCase}"/>
                                 </div>
+                                </ui:remove>
                             </h:form>
                         </div>
                     </f:view>

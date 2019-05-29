@@ -5,7 +5,7 @@ Council of Governments, PA
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * (at your option) any later version.O
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -25,16 +25,17 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.domain.ViolationException;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.CasePhase;
+import com.tcvcog.tcvce.entities.CasePhaseChangeRule;
 import com.tcvcog.tcvce.entities.CodeViolation;
-import com.tcvcog.tcvce.entities.Event;
 import com.tcvcog.tcvce.entities.EventCECase;
 import com.tcvcog.tcvce.entities.EventCategory;
 import com.tcvcog.tcvce.entities.EventType;
-import com.tcvcog.tcvce.entities.EventCasePropBundle;
+import com.tcvcog.tcvce.entities.EventCECaseCasePropBundle;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
+import com.tcvcog.tcvce.entities.reports.ReportConfigCEEventList;
 import com.tcvcog.tcvce.entities.User;
-import com.tcvcog.tcvce.entities.search.SearchParamsCEEvents;
+import com.tcvcog.tcvce.entities.search.SearchParamsEventCECase;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.EventIntegrator;
 import com.tcvcog.tcvce.integration.UserIntegrator;
@@ -76,31 +77,53 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
    
     
     
-    public SearchParamsCEEvents getSearchParamsCEEventsRequiringAction(User user, Municipality m){
+    public SearchParamsEventCECase getSearchParamsCEEventsRequiringAction(User user, Municipality m){
         SearchCoordinator sc = getSearchCoordinator();
         return sc.getSearchParamsEventsRequiringAction(user,m);
         
     }
     
-    public SearchParamsCEEvents getSearchParamsOfficerActibityPastWeek(User user, Municipality m){
+    public SearchParamsEventCECase getSearchParamsOfficerActibityPastWeek(User user, Municipality m){
         SearchCoordinator sc = getSearchCoordinator();
         return sc.getSearchParamsOfficerActivity(user, m);
         
     }
     
     
-    public SearchParamsCEEvents getSearchParamsComplianceEvPastMonth(Municipality m){
+    public SearchParamsEventCECase getSearchParamsComplianceEvPastMonth(Municipality m){
         SearchCoordinator sc = getSearchCoordinator();
         return sc.getSearchParamsComplianceEvPastMonth(m);
     }
     
     
-    public List<EventCasePropBundle> configureEventBundleList(List<EventCasePropBundle> evList, User user, List<Municipality> userAuthMuniList) throws IntegrationException{
-        Iterator<EventCasePropBundle> iter = evList.iterator();
+    /**
+     * Utility method for calling configureEvent on all EventCECase objects
+     * in a list passed back from a call to Query events
+     * @param evList
+     * @param user
+     * @param userAuthMuniList
+     * @return
+     * @throws IntegrationException 
+     */
+    public List<EventCECaseCasePropBundle> configureEventBundleList(  List<EventCECaseCasePropBundle> evList, 
+                                                                User user, List<Municipality> userAuthMuniList) throws IntegrationException{
+        Iterator<EventCECaseCasePropBundle> iter = evList.iterator();
         while(iter.hasNext()){
             configureEvent(iter.next().getEvent(), user, userAuthMuniList);
         }
         return evList;
+    }
+    
+    public ReportConfigCEEventList getDefaultReportConfigCEEventList(){
+        ReportConfigCEEventList config = new ReportConfigCEEventList();
+        config.setIncludeAttachedPersons(true);
+        config.setIncludeCaseActionRequestInfo(false);
+        config.setGenerationTimestamp(LocalDateTime.now());
+        config.setIncludeEventTypeSummaryChart(true);
+        config.setIncludeActiveCaseListing(false);
+        config.setIncludeCompleteQueryParamsDump(false);
+        config.setSortInRevChrono(true);
+        return config;
     }
     
     
@@ -118,10 +141,9 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
     public EventCECase configureEvent(EventCECase ev, User user, List<Municipality> userAuthMuniList) throws IntegrationException{
         CaseIntegrator ci = getCaseIntegrator();
         EventIntegrator ei = getEventIntegrator();
-        
        
         ev.setCurrentUserCanTakeAction(canUserTakeRequestedAction(ev, user, userAuthMuniList));
-        if(ev.getActionEventCat()!= null){
+        if(ev.getRequestedEventCat()!= null){
             if(ev.isRequestActionByDefaultMuniCEO()){
                     ev.setResponderIntended(ci.getDefaultCodeOfficer(ev.getCaseID()));
             }
@@ -133,6 +155,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
             }
         }
         
+        // TODO: event persons
         ev.setPersonList(new ArrayList<Person>());
         
         return ev;
@@ -146,9 +169,9 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * @return
      * @throws IntegrationException 
      */
-    public List<EventCasePropBundle> queryEvents(SearchParamsCEEvents params, User user, List<Municipality> userAuthMuniList) throws IntegrationException{
+    public List<EventCECaseCasePropBundle> queryEvents(SearchParamsEventCECase params, User user, List<Municipality> userAuthMuniList) throws IntegrationException, CaseLifecyleException{
         EventIntegrator ei = getEventIntegrator();
-        List<EventCasePropBundle> evList = configureEventBundleList(ei.queryEvents(params),user,userAuthMuniList);
+        List<EventCECaseCasePropBundle> evList = configureEventBundleList(ei.getEventsCECase(params),user,userAuthMuniList);
         return evList;
     }
     
@@ -214,7 +237,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      */
     public EventCECase getInitializedEvent(CECase c, EventCategory ec) throws CaseLifecyleException{
         
-        System.out.println("EventCoordinator.getInitializedEvent: caseid " + c.getCaseID() + " ec: " + ec.getEventCategoryTitle());
         // check to make sure the case isn't closed before allowing event into the switched blocks
         if(c.getCasePhase() == CasePhase.Closed && 
                 (
@@ -225,9 +247,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
                     ec.getEventType() == EventType.Compliance
                 )
         ){
-            
             throw new CaseLifecyleException("This event cannot be attached to a closed case");
-            
         }
         
         // the moment of event instantiaion!!!!
@@ -237,8 +257,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         event.setActive(true);
         event.setHidden(false);
         event.setCaseID(c.getCaseID());
-        System.out.println("EventCoordinator.getInitalizedEvent | eventCat: " 
-                + event.getCategory().getEventCategoryTitle());
         return event;
     }
     
@@ -258,9 +276,11 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
     
     
     /**
-     * Factory method for event categories.
-     * Whoever calls this method will still need to do basic setup of the event 
-     * before sending to the CaseCoordinator processEvent(CEEvent e) method
+     * Factory method for creating bare event categories.
+     * This is used when creating search parameter objects where we want event
+     * types without a specific category, but we need a EventCategory shell
+     * in which to insert the EventType
+     * 
      * @return an EventCategory container with basic properties set
      */
     public EventCategory getInitializedEventCateogry(){
@@ -304,7 +324,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         event.setCategory(ec);
         event.setDateOfRecord(LocalDateTime.now());
         event.setDescription(message);
-        event.setOwner(uc.getCogBotUser());
+        event.setOwner(uc.getRobotUser());
         event.setDiscloseToMunicipality(true);
         event.setDiscloseToPublic(true);
         event.setActive(true);
@@ -333,16 +353,15 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * @param event An initialized event
      * @throws IntegrationException bubbled up from the integrator
      * @throws EventException 
+     * @throws com.tcvcog.tcvce.domain.CaseLifecyleException 
+     * @throws com.tcvcog.tcvce.domain.ViolationException 
      */
-    public void generateAndInsertCodeViolationUpdateEvent(CECase ceCase, CodeViolation cv, EventCECase event) throws IntegrationException, EventException{
+    public void generateAndInsertCodeViolationUpdateEvent(CECase ceCase, CodeViolation cv, EventCECase event) 
+            throws IntegrationException, EventException, CaseLifecyleException, ViolationException{
         EventIntegrator ei = getEventIntegrator();
+        CaseCoordinator cc = getCaseCoordinator();
         String updateViolationDescr = getResourceBundle(Constants.MESSAGE_TEXT).getString("violationChangeEventDescription");
-        // fetch the event category id from the event category bundle under the key updateViolationEventCategoryID
-        // now we're ready to log the event
-        EventCategory ec = new EventCategory();
-        ec.setCategoryID(Integer.parseInt(getResourceBundle(
-                Constants.EVENT_CATEGORY_BUNDLE).getString("updateViolationEventCategoryID")));
-        event.setCategory(ec); 
+       
        
         // hard coded for now
 //        event.setCategory(ei.getEventCategory(117));
@@ -355,7 +374,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         // disclose to public from violation coord
         event.setActive(true);
         
-        ei.insertEvent(event);
+        cc.attachNewEventToCECase(ceCase, event, null);
     }
     
     
@@ -379,7 +398,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         
         StringBuilder sb = new StringBuilder();
         sb.append("Compliance with the following code violations was observed:");
-        sb.append("<br/><br/>");
+        sb.append("<br /><br />");
         
             sb.append(violation.getViolatedEnfElement().getCodeElement().getOrdchapterNo());
             sb.append(".");
@@ -388,7 +407,10 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
             sb.append(violation.getViolatedEnfElement().getCodeElement().getOrdSubSecNum());
             sb.append(":");
             sb.append(violation.getViolatedEnfElement().getCodeElement().getOrdSubSecTitle());
-            sb.append("<br/><br/>");
+            sb.append(" (ID ");
+            sb.append(violation.getViolationID());
+            sb.append(")");
+            sb.append("<br /><br />");
         e.setNotes(sb.toString());
         return e;
     }
@@ -412,9 +434,9 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
     
     
     
-    public ArrayList getEventList(CECase currentCase) throws IntegrationException{
+    public List getEventList(CECase currentCase) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
-        ArrayList<EventCECase> ll = ei.getEventsByCaseID(currentCase.getCaseID());
+        List<EventCECase> ll = ei.getEventsByCaseID(currentCase.getCaseID());
         return ll;
     }
     
@@ -424,10 +446,13 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * any phase from any other phase
      * @param currentCase
      * @param pastPhase
+     * @param rule
      * @throws IntegrationException
      * @throws CaseLifecyleException 
+     * @throws com.tcvcog.tcvce.domain.ViolationException 
      */
-    public void generateAndInsertPhaseChangeEvent(CECase currentCase, CasePhase pastPhase) throws IntegrationException, CaseLifecyleException, ViolationException{
+    public void generateAndInsertPhaseChangeEvent(CECase currentCase, CasePhase pastPhase, CasePhaseChangeRule rule) 
+            throws IntegrationException, CaseLifecyleException, ViolationException{
         
         EventIntegrator ei = getEventIntegrator();
         CaseCoordinator cc = getCaseCoordinator();
@@ -441,7 +466,13 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         sb.append(pastPhase.toString());
         sb.append("\' to \'");
         sb.append(currentCase.getCasePhase().toString());
-        sb.append("\' by an action event or manual override.");
+        sb.append("\'");
+        if(rule != null){
+            sb.append("following the passing of CasePhaseChangeRule:  ");
+            sb.append(rule.getTitle());
+            sb.append(", no. ");
+            sb.append(rule.getRuleID());
+        }
         event.setDescription(sb.toString());
         
         event.setCaseID(currentCase.getCaseID());
@@ -507,6 +538,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * An unused (but very schnazzy) method for generating the appropriate event that will advance a case
      * to the next phase of its life cycle. Currently called by the method 
      * getEventForTriggeringCasePhaseAdvancement in CaseManageBB
+     * @deprecated 
      * @param c
      * @return
      * @throws IntegrationException

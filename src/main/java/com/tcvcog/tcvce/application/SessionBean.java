@@ -17,32 +17,20 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.application;
 
+import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
-import com.tcvcog.tcvce.entities.CEActionRequest;
-import com.tcvcog.tcvce.entities.CECase;
-import com.tcvcog.tcvce.entities.Citation;
-import com.tcvcog.tcvce.entities.CodeElement;
-import com.tcvcog.tcvce.entities.EnforcableCodeElement;
-import com.tcvcog.tcvce.entities.CodeElementGuideEntry;
-import com.tcvcog.tcvce.entities.CodeSet;
-import com.tcvcog.tcvce.entities.CodeSource;
-import com.tcvcog.tcvce.entities.CodeViolation;
-import com.tcvcog.tcvce.entities.EventCasePropBundle;
-import com.tcvcog.tcvce.entities.Municipality;
-import com.tcvcog.tcvce.entities.NoticeOfViolation;
-import com.tcvcog.tcvce.entities.Person;
-import com.tcvcog.tcvce.entities.Property;
-import com.tcvcog.tcvce.entities.PropertyUnit;
-import com.tcvcog.tcvce.entities.PropertyWithLists;
-import com.tcvcog.tcvce.entities.PublicInfoBundle;
-import com.tcvcog.tcvce.entities.PublicInfoBundleCECase;
-import com.tcvcog.tcvce.entities.ReportConfig;
-import com.tcvcog.tcvce.entities.ReportConfigCECase;
-import com.tcvcog.tcvce.entities.ReportConfigCECaseList;
+import com.tcvcog.tcvce.entities.*;
+import com.tcvcog.tcvce.entities.reports.Report;
+import com.tcvcog.tcvce.entities.reports.ReportCEARList;
+import com.tcvcog.tcvce.entities.reports.ReportConfigCECase;
+import com.tcvcog.tcvce.entities.reports.ReportConfigCECaseList;
+import com.tcvcog.tcvce.entities.reports.ReportConfigCEEventList;
 import com.tcvcog.tcvce.entities.User;
+import com.tcvcog.tcvce.entities.search.QueryCEAR;
+import com.tcvcog.tcvce.entities.search.QueryCECase;
+import com.tcvcog.tcvce.entities.search.QueryEventCECase;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.occupancy.entities.OccPermitApplication;
-import com.tcvcog.tcvce.occupancy.entities.OccPermitApplicationReason;
 import com.tcvcog.tcvce.occupancy.entities.OccupancyInspection;
 import java.io.Serializable;
 import java.util.List;
@@ -60,12 +48,23 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
 
     private List<Property> propertyQueue;
     private List<Person> personQueue;
-    private List<CEActionRequest> cEActionRequestQueue;
+    
+    
+    private List<CEActionRequest> queueCEAR;
+    
+    private CEActionRequest sessionCEAR;
+    private QueryCEAR sessionQueryCEAR;
+    
+    
     private List<CECase> cECaseQueue;
-    private List<EventCasePropBundle> cEEventWCPIQueue;
+    private List<EventCECaseCasePropBundle> cEEventWCPIQueue;
     private List<CodeViolation> violationQueue;
     private List<OccupancyInspection> inspectionQueue;
     
+    private QueryCECase sessionQueryCECase;
+    private CECase sessionCECase;
+    private QueryEventCECase queryEventCECase;
+   
     /* *** System Core Objects Session Shelves ***  */
     private Municipality activeMuni;
     private List<Municipality> userAuthMuniList;
@@ -84,15 +83,12 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     /* *** Code Enf Action Request Session Shelves ***  */
     
     private Person personForCEActionRequestSubmission;
-    
-    
+
     private User utilityUserToUpdate;
     private CEActionRequest ceactionRequestForSubmission;
-    private CEActionRequest activeRequest;
     private CECase cECase;
     
      /* *** Code Enforcement Case Session Shelves ***  */
-    
     private NoticeOfViolation activeNotice;
     private Citation activeCitation;
     private CodeViolation activeCodeViolation;
@@ -102,18 +98,22 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     private PublicInfoBundleCECase pibCECase;
 
     /* *** Reporting *** */
+    private Report sessionReport;
+    
     private ReportConfigCECase reportConfigCECase;
     private ReportConfigCECaseList reportConfigCECaseList;
-    private ReportConfig activeReport;
+    private ReportConfigCEEventList reportConfigCEEventList;
     
+
     
     /* *** Occupancy Permit Application Session Shelves *** */
     private OccPermitApplication occPermitApplication;
     private PropertyUnit activePropUnit;
     private PropertyWithLists activePropWithLists;
-    private OccPermitApplicationReason occPermitApplicationReason;
-
-
+    private PersonType activePersonType;
+    
+    /* *** Public Person Search/Edit Session Shelves *** */
+    private Person activeAnonPerson;
 
     /**
      * Creates a new instance of getSessionBean()
@@ -137,7 +137,7 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
         
     }
     
-    public void refreshActiveCase() throws IntegrationException{
+    public void refreshActiveCase() throws IntegrationException, CaseLifecyleException{
         CaseIntegrator ci = getCaseIntegrator();
         if(cECase != null){
             CECase c = ci.getCECase(cECase.getCaseID());
@@ -145,7 +145,6 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
         }
     }
 
-   
     /**
      * @return the activePerson
      */
@@ -368,10 +367,11 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     }
 
     /**
-     * @return the cEActionRequestQueue
+     * @return the queueCEAR
      */
-    public List<CEActionRequest> getcEActionRequestQueue() {
-        return cEActionRequestQueue;
+    public List<CEActionRequest> getQueueCEAR() {
+        
+        return queueCEAR;
     }
 
     /**
@@ -382,10 +382,13 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     }
 
     /**
-     * @param cEActionRequestQueue the cEActionRequestQueue to set
+     * @param qc
      */
-    public void setcEActionRequestQueue(List<CEActionRequest> cEActionRequestQueue) {
-        this.cEActionRequestQueue = cEActionRequestQueue;
+    public void setQueueCEAR(List<CEActionRequest> qc) {
+        if(qc != null && qc.size() > 0 ){
+            setSessionQueryCEAR(null);
+            this.queueCEAR = qc;
+        }
     }
     
 
@@ -425,17 +428,17 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     }
 
     /**
-     * @return the activeRequest
+     * @return the sessionCEAR
      */
-    public CEActionRequest getActiveRequest() {
-        return activeRequest;
+    public CEActionRequest getSessionCEAR() {
+        return sessionCEAR;
     }
 
     /**
-     * @param activeRequest the activeRequest to set
+     * @param sessionCEAR the sessionCEAR to set
      */
-    public void setActiveRequest(CEActionRequest activeRequest) {
-        this.activeRequest = activeRequest;
+    public void setSessionCEAR(CEActionRequest sessionCEAR) {
+        this.sessionCEAR = sessionCEAR;
     }
 
     /**
@@ -526,32 +529,18 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     public void setActivePropWithLists(PropertyWithLists activePropWithLists) {
         this.activePropWithLists = activePropWithLists;
     }
-
-    /**
-     * @return the occPermitApplicationReason
-     */
-    public OccPermitApplicationReason getOccPermitApplicationReason() {
-        return occPermitApplicationReason;
-    }
-
-    /**
-     * @param occPermitApplicationReason the occPermitApplicationReason to set
-     */
-    public void setOccPermitApplicationReason(OccPermitApplicationReason occPermitApplicationReason) {
-        this.occPermitApplicationReason = occPermitApplicationReason;
-    }
      
     /*
      * @return the cEEventWCPIQueue
      */
-    public List<EventCasePropBundle> getcEEventWCPIQueue() {
+    public List<EventCECaseCasePropBundle> getcEEventWCPIQueue() {
         return cEEventWCPIQueue;
     }
 
     /**
      * @param cEEventWCPIQueue the cEEventWCPIQueue to set
      */
-    public void setcEEventWCPIQueue(List<EventCasePropBundle> cEEventWCPIQueue) {
+    public void setcEEventWCPIQueue(List<EventCECaseCasePropBundle> cEEventWCPIQueue) {
         this.cEEventWCPIQueue = cEEventWCPIQueue;
     }
 
@@ -598,17 +587,17 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
     }
 
     /**
-     * @return the activeReport
+     * @return the sessionReport
      */
-    public ReportConfig getActiveReport() {
-        return activeReport;
+    public Report getSessionReport() {
+        return sessionReport;
     }
 
     /**
-     * @param activeReport the activeReport to set
+     * @param sessionReport the sessionReport to set
      */
-    public void setActiveReport(ReportConfig activeReport) {
-        this.activeReport = activeReport;
+    public void setSessionReport(Report sessionReport) {
+        this.sessionReport = sessionReport;
     }
 
     /**
@@ -623,6 +612,90 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
      */
     public void setReportConfigCECaseList(ReportConfigCECaseList reportConfigCECaseList) {
         this.reportConfigCECaseList = reportConfigCECaseList;
+    }
+
+    /**
+     * @return the reportConfigCEEventList
+     */
+    public ReportConfigCEEventList getReportConfigCEEventList() {
+        return reportConfigCEEventList;
+    }
+
+    /**
+     * @param reportConfigCEEventList the reportConfigCEEventList to set
+     */
+    public void setReportConfigCEEventList(ReportConfigCEEventList reportConfigCEEventList) {
+        this.reportConfigCEEventList = reportConfigCEEventList;
+    }
+
+    /**
+     * @return the sessionQueryCEAR
+     */
+    public QueryCEAR getSessionQueryCEAR() {
+        return sessionQueryCEAR;
+    }
+
+    /**
+     * @param sessionQueryCEAR the sessionQueryCEAR to set
+     */
+    public void setSessionQueryCEAR(QueryCEAR sessionQueryCEAR) {
+        this.sessionQueryCEAR = sessionQueryCEAR;
+    }
+
+    /**
+     * @return the sessionCECase
+     */
+    public CECase getSessionCECase() {
+        return sessionCECase;
+    }
+
+    /**
+     * @param sessionCECase the sessionCECase to set
+     */
+    public void setSessionCECase(CECase sessionCECase) {
+        this.sessionCECase = sessionCECase;
+    }
+
+    /**
+     * @return the sessionQueryCECase
+     */
+    public QueryCECase getSessionQueryCECase() {
+        return sessionQueryCECase;
+    }
+
+    /**
+     * @param sessionQueryCECase the sessionQueryCECase to set
+     */
+    public void setSessionQueryCECase(QueryCECase sessionQueryCECase) {
+        this.sessionQueryCECase = sessionQueryCECase;
+    }
+
+    /**
+     * @return the activePersonType
+     */
+    public PersonType getActivePersonType() {
+        return activePersonType;
+    }
+
+    /**
+     * @param activePersonType the activePersonType to set
+     */
+    public void setActivePersonType(PersonType activePersonType) {
+        this.activePersonType = activePersonType;
+    }
+
+    /**
+     * @return the activeAnonPerson
+     */
+    public Person getActiveAnonPerson() {
+        return activeAnonPerson;
+    }
+
+    /**
+     * @param activeAnonPerson the activeAnonPerson to set
+     */
+    public void setActiveAnonPerson(Person activeAnonPerson) {
+        this.activeAnonPerson = activeAnonPerson;
     }
     
 }

@@ -109,11 +109,9 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
                     "  personsource.sourceid, \n" +
                     "  personsource.title\n" +
                     "FROM \n" +
-                    "  public.person, \n" +
-                    "  public.personsource\n" +
+                    "  public.person LEFT OUTER JOIN public.personsource ON person.sourceid = personsource.sourceid \n" +
                     "WHERE \n" +
-                    "  person.sourceid = personsource.sourceid \n"+
-                    "  AND personid = ?;";
+                    "  personid = ?;";
             
             stmt = con.prepareStatement(s);
             stmt.setInt(1, personId);
@@ -347,18 +345,28 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
     
     public void connectPersonToProperty(Person person, Property prop) throws IntegrationException {
 
+        String selectQuery = "SELECT property_propertyid, person_personid\n" +
+                    "  FROM public.propertyperson WHERE property_propertyid = ? AND person_personid = ?;";
+
         String query = "INSERT INTO public.propertyperson(\n"
                 + " property_propertyid, person_personid)\n"
                 + " VALUES (?, ?);";
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
-
+        ResultSet rs = null;
         try {
-            stmt = con.prepareStatement(query);
+            stmt = con.prepareStatement(selectQuery, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
             stmt.setInt(1, prop.getPropertyID());
             stmt.setInt(2, person.getPersonID());
+            rs = stmt.executeQuery();
+            
+            if(!rs.first()){
+                stmt = con.prepareStatement(query);
+                stmt.setInt(1, prop.getPropertyID());
+                stmt.setInt(2, person.getPersonID());
 
-            stmt.execute();
+                stmt.execute();
+            }
 
         } catch (SQLException ex) {
             System.out.println(ex.toString());
@@ -367,6 +375,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         } finally {
            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+           if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
         } // close finally
 
     }
@@ -410,7 +419,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
                     + "?, ?, ?, " 
                     + "?, ?, " // through 25, mailing_address_city
                     + "?, ?, ?, "
-                    + "?, ?, ?, ?);"; // through 32
+                    + "?, ?, ?, NULL);"; // through 32
 
         PreparedStatement stmt = null;
         try {
@@ -475,7 +484,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
             stmt.setString(29, personToStore.getExpiryNotes());
             stmt.setTimestamp(30, java.sql.Timestamp.valueOf(LocalDateTime.now()));
             stmt.setBoolean(31, personToStore.isCanExpire());
-            stmt.setInt(32, personToStore.getLinkedUserID());
+//            stmt.setInt(32, personToStore.getLinkedUserID());
 
             stmt.execute();
 
@@ -720,14 +729,14 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         } // close finally
     } // close updatePerson
 
-    public ArrayList getPersonList(Property p) throws IntegrationException {
+    public List<Person> getPersonList(Property p) throws IntegrationException {
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
         ResultSet rs = null;
-        ArrayList<Person> al = new ArrayList();
+        List<Person> list = new ArrayList<>();
 
         try {
-            String s = "SELECT * FROM public.propertyperson WHERE property_propertyid = ?;";
+            String s = "SELECT person_personid FROM public.propertyperson WHERE property_propertyid = ?;";
             stmt = con.prepareStatement(s);
             stmt.setInt(1, p.getPropertyID());
 
@@ -735,7 +744,8 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
 
             while (rs.next()) {
                 Person pers = getPerson(rs.getInt("person_personid"));
-                al.add(pers);
+                list.add(pers);
+                
             }
 
         } catch (SQLException ex) {
@@ -747,7 +757,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
             if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
         } // close finally
 
-        return al;
+        return list;
 
     }
 
@@ -798,8 +808,8 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         try {
             String s = "select createghostperson(p.*, ? ) from person AS p where personid = ?;";
             stmt = con.prepareStatement(s);
-            stmt.setInt(1, p.getPersonID());
             stmt.setInt(1, u.getUserID());
+            stmt.setInt(2, p.getPersonID());
 
             rs = stmt.executeQuery();
             
@@ -828,15 +838,15 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         int newGhostID = 0;
 
         try {
-            String s = "select creatClonedperson(p.*, ? ) from person AS p where personid = ?;";
+            String s = "select createcloneperson(p.*, ? ) from person AS p where personid = ?;";
             stmt = con.prepareStatement(s);
-            stmt.setInt(1, p.getPersonID());
             stmt.setInt(1, u.getUserID());
+            stmt.setInt(2, p.getPersonID());
 
             rs = stmt.executeQuery();
             
             while (rs.next()) {
-                newGhostID = rs.getInt("createClonedperson");
+                newGhostID = rs.getInt("createcloneperson");
                 System.out.println("PersonIntegrator.createClone| new clone ID: " + newGhostID );
             }
 
@@ -949,6 +959,109 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
         } // close finally
+    }
+    
+    public List<Person> queryPersons(SearchParamsPersons params) throws IntegrationException {
+        ArrayList<Person> personList = new ArrayList();
+        Connection con = getPostgresCon();
+        ResultSet rs = null;
+        PreparedStatement stmt = null;
+        String defaultQuery = "SELECT personId "
+                + "FROM person "
+                + "WHERE ";
+        StringBuilder query = new StringBuilder(defaultQuery);
+        boolean notFirstCriteria = false;
+        
+        
+        if (!params.isFilterByObjectID()){
+            if (params.isFilterByLastName()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("lname = ? ");
+            }
+            if (params.isFilterByFirstName()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("fname = ? ");
+            }
+            if (params.isFilterByAddressStreet()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("address_street = ? ");
+            }
+            if (params.isFilterByCity()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("address_city = ? ");
+            }
+            if (params.isFilterByZipCode()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("address_zip = ? ");
+            }            
+            if (params.isFilterByEmail()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("email = ? ");
+            }
+            
+            if (params.isFilterByPhoneNumber()){
+                if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
+                query.append("phonecell = ? OR phonework = ? OR phonehome = ? ");
+            }
+            
+        } else {
+            query.append("caseid = ? ");
+        }
+        
+        int paramCounter = 0;
+        
+        try {
+            stmt = con.prepareStatement(query.toString());
+            if (!params.isFilterByObjectID()){
+                if (params.isFilterByLastName()){
+                    stmt.setString(++paramCounter, params.getLastNameSS());
+                }
+                if (params.isFilterByFirstName()){
+                    stmt.setString(++paramCounter, params.getFirstNameSS());
+                }
+                if (params.isFilterByAddressStreet()){
+                    stmt.setString(++paramCounter, params.getAddrStreetSS());
+                }
+                if (params.isFilterByCity()){
+                    stmt.setString(++paramCounter, params.getCity());
+                }
+                if (params.isFilterByZipCode()){
+                    stmt.setString(++paramCounter, params.getZipCode());
+                }            
+                if (params.isFilterByEmail()){
+                    stmt.setString(++paramCounter, params.getEmailSS());
+                }
+                if (params.isFilterByPhoneNumber()){
+                    stmt.setString(++paramCounter, params.getPhoneNumber());
+                }
+            } else {
+                stmt.setInt(++paramCounter, params.getObjectID());
+            }
+            
+            rs = stmt.executeQuery();
+            
+            int counter = 0;
+            int maxResults;
+            if (params.isLimitResultCountTo100()) {
+                maxResults = 100;
+            } else {
+                maxResults = Integer.MAX_VALUE;
+            }
+            while (rs.next() && counter < maxResults) {
+                personList.add(getPerson(rs.getInt("personid")));
+                counter++;
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("PersonIntegrator.queryPersons | Unable to search for "
+                    + "persons, ", ex);
+        } finally{
+             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+             if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        }        
+       
+        return personList;
     }
 
 } // close class

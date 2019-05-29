@@ -27,7 +27,9 @@ import java.util.Objects;
  *
  * @author Eric C. Darsow
  */
-public class Event extends EntityUtils implements Serializable, Comparable<Event> {
+public class Event 
+        extends EntityUtils 
+        implements Serializable, Comparable<Event> {
     
     private int eventID;
     
@@ -52,7 +54,7 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
     
     /*Case event requests fields */
     
-    // utility memvar which is true if there's a requested
+    // utility "pass through" memvar which is true if there's a requested
     // event category in actionRequestCateogry
     private boolean requestsAction;
     
@@ -67,7 +69,7 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
     
     private boolean currentUserCanTakeAction;
     
-    private EventCategory actionEventCat;
+    private EventCategory requestedEventCat;
     
 // the event object generated based on this event's
     // action request. NOTE: triggeringEvent and responseEvent
@@ -437,7 +439,7 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
      * @return the requestsAction
      */
     public boolean isRequestsAction() {
-        requestsAction = actionEventCat!= null;
+        requestsAction = requestedEventCat!= null;
         return requestsAction;
     }
 
@@ -509,17 +511,17 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
     }
 
     /**
-     * @return the actionEventCat
+     * @return the requestedEventCat
      */
-    public EventCategory getActionEventCat() {
-        return actionEventCat;
+    public EventCategory getRequestedEventCat() {
+        return requestedEventCat;
     }
 
     /**
-     * @param actionEventCat the actionEventCat to set
+     * @param requestedEventCat the requestedEventCat to set
      */
-    public void setActionEventCat(EventCategory actionEventCat) {
-        this.actionEventCat = actionEventCat;
+    public void setRequestedEventCat(EventCategory requestedEventCat) {
+        this.requestedEventCat = requestedEventCat;
     }
 
     /**
@@ -611,7 +613,7 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
         hash = 97 * hash + (this.responseComplete ? 1 : 0);
         hash = 97 * hash + Objects.hashCode(this.triggeringEvent);
         hash = 97 * hash + (this.currentUserCanTakeAction ? 1 : 0);
-        hash = 97 * hash + Objects.hashCode(this.actionEventCat);
+        hash = 97 * hash + Objects.hashCode(this.requestedEventCat);
         hash = 97 * hash + Objects.hashCode(this.responseEvent);
         hash = 97 * hash + Objects.hashCode(this.actionRequestedBy);
         hash = 97 * hash + (this.requestActionByDefaultMuniCEO ? 1 : 0);

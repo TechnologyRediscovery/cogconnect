@@ -7,6 +7,7 @@ package com.tcvcog.tcvce.application;
 
 import com.tcvcog.tcvce.coordinators.SearchCoordinator;
 import com.tcvcog.tcvce.coordinators.CaseCoordinator;
+import com.tcvcog.tcvce.domain.AuthorizationException;
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CEActionRequest;
@@ -15,6 +16,10 @@ import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.Property;
+import com.tcvcog.tcvce.entities.reports.ReportCEARList;
+import com.tcvcog.tcvce.entities.search.Query;
+import com.tcvcog.tcvce.entities.search.QueryCEAR;
+import com.tcvcog.tcvce.entities.search.QueryCEAREnum;
 import com.tcvcog.tcvce.entities.search.SearchParamsCEActionRequests;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
@@ -23,33 +28,43 @@ import com.tcvcog.tcvce.integration.PropertyIntegrator;
 import com.tcvcog.tcvce.util.Constants;
 import com.tcvcog.tcvce.util.MessageBuilderParams;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.event.ActionEvent;
+import org.primefaces.model.chart.DonutChartModel;
 
 /**
  * Primary backing bean for managing all code enforcement action requests.
- * Contains four methods, each of which routes a selected request down 
- * a workflow pathway and adjusts the request object's status accordingly.
- * 
+ * Contains four methods, each of which routes a selected request down a
+ * workflow pathway and adjusts the request object's status accordingly.
+ *
  * Also contains utility methods for manipulating and editing requests.
- * 
+ *
  * @author Ellen Baskem
  */
 public class CEActionRequestsBB extends BackingBeanUtils implements Serializable {
-    
+
     private CEActionRequest selectedRequest;
     private List<CEActionRequest> requestList;
-    private int requestListSize;
-    
+    private ReportCEARList reportConfig;
+
+    private DonutChartModel requestReasonDonut;
+
     private List<CEActionRequestStatus> statusList;
     private CEActionRequestStatus selectedStatus;
+
+    private List<QueryCEAR> queryList;
+    private QueryCEAR selectedQueryCEAR;
     private SearchParamsCEActionRequests searchParams;
-    
+
     private CEActionRequestStatus selectedChangeToStatus;
     private String invalidMessage;
     private String noViolationFoundMessage;
@@ -57,93 +72,260 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
     private String internalMessageText;
     private String muniMessageText;
     private String publicMessageText;
-    
+
     private Person selectedPersonForAttachment;
-    
+
     private ArrayList<CECase> caseListForSelectedProperty;
     private String houseNumSearch;
     private String streetNameSearch;
-    
+
     private CECase selectedCaseForAttachment;
-    
+
     private Municipality muniForPropSwitchSearch;
     private Property propertyForPropSwitch;
     private List<Property> propertyList;
-    
+
     private int ceCaseIDForConnection;
     private boolean disablePACCControl;
     private boolean disabledDueToRoutingNotAllowed;
-    
-    
-      /**
+
+    /**
      * Creates a new instance of ActionRequestManageBB
      */
     public CEActionRequestsBB() {
-    
+
     }
-    
+
     @PostConstruct
-    public void initBean(){
-        CaseCoordinator cc = getCaseCoordinator();
-        searchParams = cc.getDefaultSearchParamsCEActionRequests(getSessionBean().getActiveMuni());
+    public void initBean() {
+        SearchCoordinator sc = getSearchCoordinator();
+
+        QueryCEAR sessionQuery = getSessionBean().getSessionQueryCEAR();
+
+        selectedRequest = getSessionBean().getSessionCEAR();
+
+        try {
+            requestList = sc.runQuery(sessionQuery).getResults();
+            if (selectedRequest == null && requestList.size() > 0) {
+                selectedRequest = requestList.get(0);
+                generateCEARReasonDonutModel();
+            }
+            selectedQueryCEAR = sessionQuery;
+            searchParams = sessionQuery.getParmsList().get(0);
+            queryList = sc.buildQueryCEARList(getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
+        } catch (IntegrationException | AuthorizationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, ex.getMessage(), ""));
+        }
+    }
+
+    private void generateCEARReasonDonutModel() {
+        if(requestList != null && requestList.size() > 0){
+
+            CaseCoordinator cc = getCaseCoordinator();
+            DonutChartModel donut =  new DonutChartModel();
+
+            donut.addCircle(cc.computeCountsByCEARReason(requestList));
+
+            donut.setTitle("Requests by reason");
+            donut.setLegendPosition("nw");
+            donut.setShowDataLabels(true);
+            
+            requestReasonDonut = donut;
+        } 
         
+
+    }
+
+    public void executeQuery(ActionEvent ev) {
+        SearchCoordinator searchC = getSearchCoordinator();
+        try {
+            requestList = searchC.runQuery(selectedQueryCEAR).getResults();
+            generateCEARReasonDonutModel();
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                             "Your query completed with " + requestList.size() + " results!", ""));
+        } catch (IntegrationException ex) {
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Unable to query action requests, sorry", ""));
+        } catch (AuthorizationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             ex.getMessage(), ""));
+        }
+
+    }
+
+    public void executeCustomQuery(ActionEvent ev) {
+        CaseCoordinator cc = getCaseCoordinator();
+        SearchCoordinator searchCoord = getSearchCoordinator();
+        try {
+            
+            selectedQueryCEAR = searchCoord.assembleQueryCEAR(
+                                                    QueryCEAREnum.CUSTOM,
+                                                    getSessionBean().getFacesUser(), 
+                                                    getSessionBean().getActiveMuni(), 
+                                                    searchParams);
+            requestList =searchCoord.runQuery(selectedQueryCEAR).getResults();
+            
+            
+            generateCEARReasonDonutModel();
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_INFO,
+                             "Your query completed with " + requestList.size() + " results!", ""));
+        } catch (IntegrationException ex) {
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Unable to query action requests, sorry", ""));
+        } catch (AuthorizationException ex) {
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             ex.getMessage(), ""));
+        }
+    }
+
+    
+    
+    public void prepareReportMultiCEAR(ActionEvent ev) {
+        CaseCoordinator cc = getCaseCoordinator();
+        SearchCoordinator searchCoord = getSearchCoordinator();
+        
+        ReportCEARList rpt = cc.getInitializedReportConficCEARs(
+                getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
+        
+        rpt.setPrintFullCEARQueue(true);
+        if (selectedQueryCEAR != null) {
+            //go run the Query if it hasn't been yet
+            if(!selectedQueryCEAR.isExecutedByIntegrator()){
+                try {
+                    selectedQueryCEAR = searchCoord.runQuery(selectedQueryCEAR);
+                } catch (AuthorizationException | IntegrationException ex) {
+                    System.out.println(ex);
+                }
+            }
+            rpt.setTitle("Code enforcement requests: " + selectedQueryCEAR.getQueryName().getTitle());
+            rpt.setNotes(selectedQueryCEAR.getQueryName().getDesc());
+            rpt.setBOBQuery(selectedQueryCEAR);
+
+        }
+        reportConfig = rpt;
     }
     
-    public String path1CreateNewCaseAtProperty(){
+    /**
+     *
+     * @param ev
+     */
+    public void prepareReportSingleCEAR(ActionEvent ev) {
+        CaseCoordinator cc = getCaseCoordinator();
+        SearchCoordinator searchCoord = getSearchCoordinator();
+        ReportCEARList rpt = cc.getInitializedReportConficCEARs(
+                getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
+        rpt.setPrintFullCEARQueue(false);
+        try {
+            QueryCEAR query = searchCoord.assembleQueryCEAR(
+                                                QueryCEAREnum.CUSTOM, 
+                                                getSessionBean().getFacesUser(), 
+                                                getSessionBean().getActiveMuni(), 
+                                                null);
+            List<CEActionRequest> singleReqList = new ArrayList<>();
+            selectedRequest.setInsertPageBreakBefore(false);
+            singleReqList.add(selectedRequest);
+            query.addToResults(singleReqList);
+            query.setExecutionTimestamp(LocalDateTime.now());
+            rpt.setBOBQuery(query);
+            rpt.setGenerationTimestamp(LocalDateTime.now());
+            rpt.setTitle("Code enforcement request");
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Unable to build query, sorry!", ""));
+            
+        }
+        
+        reportConfig = rpt;
+
+    }
+
+    public String generateReportSingleCEAR() {
+        getSessionBean().setSessionCEAR(selectedRequest);
+        getSessionBean().setSessionReport(reportConfig);
+        getSessionBean().setSessionQueryCEAR(selectedQueryCEAR);
+        return "reportCEARList";
+
+    }
+    
+    public String generateReportMultiCEAR(){
+        getSessionBean().setSessionCEAR(selectedRequest);
+        
+        Collections.sort(reportConfig.getBOBQuery().getBOBResultList());
+        
+        // tell the first request in the list to not print a page break before itself
+        reportConfig.getBOBQuery().getBOBResultList().get(0).setInsertPageBreakBefore(false);
+        
+        getSessionBean().setSessionReport(reportConfig);
+        getSessionBean().setSessionQueryCEAR(selectedQueryCEAR);
+        return "reportCEARList";
+    }
+
+    public String path1CreateNewCaseAtProperty() {
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
 
-        if(selectedRequest != null){
-            if(selectedRequest.getRequestProperty() != null){
+        if (selectedRequest != null) {
+            if (selectedRequest.getRequestProperty() != null) {
                 getSessionBean().setActiveProp(selectedRequest.getRequestProperty());
             }
-            
+
             MessageBuilderParams mbp = new MessageBuilderParams();
             mbp.user = getFacesUser();
             mbp.existingContent = selectedRequest.getPublicExternalNotes();
             mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("attachedToCaseHeader");
             mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("attachedToCaseExplanation");
             mbp.newMessageContent = "";
-            
+
             selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
-            
+
             // force the bean to go to the integrator and fetch a fresh, updated
             // list of action requests
             try {
                 ceari.updateActionRequestNotes(selectedRequest);
             } catch (IntegrationException ex) {
                 getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR
-                            ,"Unable to update action request with case attachment notes" , ""));
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                 "Unable to update action request with case attachment notes", ""));
             }
         } else {
             getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR
-                        ,"Please select an action request from the table to open a new case" , ""));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Please select an action request from the table to open a new case", ""));
             return "";
         }
-        
+
         updateSelectedRequestStatusWithBundleKey("actionRequestNewCaseStatusCode");
-        
+
 // This shelf will be checked by the case creation coordinator
         // and link the request to the new case so we don't lose track of it
         getSessionBean().setCeactionRequestForSubmission(selectedRequest);
-        
+
         return "addNewCase";
     }
-    
-    public void path2UseSelectedCaseForAttachment(CECase c){
+
+    public void path2UseSelectedCaseForAttachment(CECase c) {
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         selectedCaseForAttachment = c;
         try {
-            ceari.connectActionRequestToCECase(selectedRequest.getRequestID(), selectedCaseForAttachment.getCaseID(), getFacesUser().getUserID() );
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Successfully connected action request ID " + selectedRequest.getRequestID() 
-                                + " to code enforcement case ID " + selectedCaseForAttachment.getCaseID(), ""));
+            ceari.connectActionRequestToCECase(selectedRequest.getRequestID(), selectedCaseForAttachment.getCaseID(), getFacesUser().getUserID());
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Successfully connected action request ID " + selectedRequest.getRequestID()
+                    + " to code enforcement case ID " + selectedCaseForAttachment.getCaseID(), ""));
         } catch (CaseLifecyleException | IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                        "Unable to connect request to case.", 
-                        getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    "Unable to connect request to case.",
+                    getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
 //          selectedRequest.
         selectedRequest.setCaseID(selectedCaseForAttachment.getCaseID());
@@ -151,9 +333,9 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         // force a reload of request list
         requestList = null;
     }
-    
-    public void path3AttachInvalidMessage(ActionEvent ev){
-        if(selectedRequest != null){ 
+
+    public void path3AttachInvalidMessage(ActionEvent ev) {
+        if (selectedRequest != null) {
             CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
             updateSelectedRequestStatusWithBundleKey("actionRequestInvalidStatusCode");
 
@@ -167,31 +349,30 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             selectedRequest.setPublicExternalNotes(appendNoteBlock(mcc));
             try {
                 ceari.updateActionRequestNotes(selectedRequest);
-                getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                                "Public case note added to action request ID " + selectedRequest.getRequestID() + ".",""));
+                getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        "Public case note added to action request ID " + selectedRequest.getRequestID() + ".", ""));
             } catch (IntegrationException ex) {
                 System.out.println(ex);
                 getFacesContext().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                                "Unable to write message to The Database", 
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                "Unable to write message to The Database",
                                 "This is a system level error that must be corrected by a sys admin--sorries!."));
             }
         } else {
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                            "You just tried to attach a message to a nonexistent request!", 
-                            "Choose the request to manage on the left, then click manage"));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                    "You just tried to attach a message to a nonexistent request!",
+                    "Choose the request to manage on the left, then click manage"));
         }
         requestList = null;
     }
-    
-    
-    public void path4AttachNoViolationFoundMessage(ActionEvent ev){
-        if(selectedRequest != null){
+
+    public void path4AttachNoViolationFoundMessage(ActionEvent ev) {
+        if (selectedRequest != null) {
 
             CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-            
+
             updateSelectedRequestStatusWithBundleKey("actionRequestNoViolationStatusCode");
-            
+
             // build message to document change
             MessageBuilderParams mbp = new MessageBuilderParams();
             mbp.user = getFacesUser();
@@ -199,92 +380,91 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("noViolationFoundHeader");
             mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("noViolationFoundExplanation");
             mbp.newMessageContent = noViolationFoundMessage;
-            
+
             selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
-            
+
             // force the bean to go to the integrator and fetch a fresh, updated
             // list of action requests
             requestList = null;
             try {
                 ceari.updateActionRequestNotes(selectedRequest);
                 getFacesContext().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                                "Public case note added to action request ID " + selectedRequest.getRequestID() + ".",""));
+                        new FacesMessage(FacesMessage.SEVERITY_INFO,
+                                "Public case note added to action request ID " + selectedRequest.getRequestID() + ".", ""));
 
             } catch (IntegrationException ex) {
                 System.out.println(ex);
                 getFacesContext().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                                "Unable to write message to The Database", 
+                        new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                                "Unable to write message to The Database",
                                 "This is a system level error that must be corrected by a sys admin--sorries!."));
             }
         } else {
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                            "No request selected!", 
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "No request selected!",
                             "Choose the request to manage on the left, then click manage"));
         }
     }
-    
-    private void updateSelectedRequestStatusWithBundleKey(String newStatusKey){
-            CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-            
-            try {
-                selectedRequest.setRequestStatus(ceari.getRequestStatus(Integer.parseInt(
-                        getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
-                        .getString(newStatusKey))));
-                ceari.updateActionRequestStatus(selectedRequest);
-                getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                                "Status changed on request ID " + selectedRequest.getRequestID(),""));
-            } catch (IntegrationException ex) {
-                getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                        "Unable to change request status", 
-                        "This is a system level error that must be corrected by a sys admin--sorries!."));
-            }
+
+    private void updateSelectedRequestStatusWithBundleKey(String newStatusKey) {
+        CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
+
+        try {
+            selectedRequest.setRequestStatus(ceari.getRequestStatus(Integer.parseInt(
+                    getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
+                            .getString(newStatusKey))));
+            ceari.updateActionRequestStatus(selectedRequest);
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Status changed on request ID " + selectedRequest.getRequestID(), ""));
+        } catch (IntegrationException ex) {
+            getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                            "Unable to change request status",
+                            "This is a system level error that must be corrected by a sys admin--sorries!."));
+        }
     }
-    
-    
-    public void updateRequestList(ActionEvent ev){
+
+    public void updateRequestList(ActionEvent ev) {
         requestList = null;
         System.out.println("ActionRequestManagebb.updateRequestList");
     }
-    
-    public void searchForProperties(ActionEvent ev){
-        
+
+    public void searchForProperties(ActionEvent ev) {
+
         PropertyIntegrator pi = getPropertyIntegrator();
         try {
             propertyList = pi.searchForProperties(houseNumSearch, streetNameSearch, muniForPropSwitchSearch.getMuniCode());
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Your search completed with " + propertyList.size() + " results", ""));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Your search completed with " + propertyList.size() + " results", ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to complete a property search! Sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to complete a property search! Sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
     }
-    
-    public void updateRequestProperty(ActionEvent ev){
+
+    public void updateRequestProperty(ActionEvent ev) {
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-        
+
         Property formerProp = selectedRequest.getRequestProperty();
         selectedRequest.setRequestProperty(propertyForPropSwitch);
-        
+
         try {
             ceari.updateActionRequestProperty(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Done! Property udpate for request ID " + selectedRequest.getRequestID(), ""));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Done! Property udpate for request ID " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to change request property, sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to change request property, sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
         StringBuilder sb = new StringBuilder();
-        if( formerProp != null){
+        if (formerProp != null) {
             sb.append("Previous address: ");
             sb.append(formerProp.getAddress());
             sb.append(" (");
@@ -298,75 +478,74 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         } else {
             sb.append(getResourceBundle(Constants.MESSAGE_TEXT).getString("noPreviousAddress"));
         }
-        
+
         MessageBuilderParams mbp = new MessageBuilderParams();
         mbp.user = getFacesUser();
         mbp.existingContent = selectedRequest.getPublicExternalNotes();
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("propertyChangedHeader");
         mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("propertyChangedExplanation");
         mbp.newMessageContent = sb.toString();
-        
+
         selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
         try {
             ceari.updateActionRequestNotes(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Automatic case note generated for property update", ""));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Automatic case note generated for property update", ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to add property change note to public listing, sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to add property change note to public listing, sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
         // force table reload to show changes
         requestList = null;
     }
-    
-    public void selectNewRequestPerson(Person p){
+
+    public void selectNewRequestPerson(Person p) {
         selectedPersonForAttachment = p;
-        
+
     }
-    
-    public void updateRequestor(ActionEvent ev){
+
+    public void updateRequestor(ActionEvent ev) {
         System.out.println("CEActionRequestsBB.updateRequestor");
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-        selectedRequest.setActionRequestorPerson(selectedPersonForAttachment);
-        
+        selectedRequest.setRequestor(selectedPersonForAttachment);
+
         try {
             ceari.updateActionRequestor(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Done! Requestor is now: " 
-                                + String.valueOf(selectedRequest.getActionRequestorPerson().getFirstName()) 
-                                + String.valueOf(selectedRequest.getActionRequestorPerson().getLastName())
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Done! Requestor is now: "
+                    + String.valueOf(selectedRequest.getRequestor().getFirstName())
+                    + String.valueOf(selectedRequest.getRequestor().getLastName())
                     + " for action request ID: " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to change requestor person"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to change requestor person",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
     }
-    
-    public void changePACCAccess(){
+
+    public void changePACCAccess() {
         System.out.println("CEActionRequestsBB.changePACCAccess");
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-        
+
         try {
             ceari.updatePACCAccess(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Done! Public access status is now: " + String.valueOf(selectedRequest.isPaccEnabled())
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Done! Public access status is now: " + String.valueOf(selectedRequest.isPaccEnabled())
                     + " for action request ID: " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to add change public access code status"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to add change public access code status",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
     }
-    
-    
-    public void attachInternalMessage(ActionEvent ev){
-        
+
+    public void attachInternalMessage(ActionEvent ev) {
+
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
         mbp.user = getFacesUser();
@@ -379,19 +558,19 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         selectedRequest.setCogInternalNotes(newNotes);
         try {
             ceari.updateActionRequestNotes(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO
-                    , "Done: added internal note to request ID " + selectedRequest.getRequestID() ,"" ));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                     "Done: added internal note to request ID " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to update notes, sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to update notes, sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
     }
-    
-    public void attachMuniMessage(ActionEvent ev){
-        
+
+    public void attachMuniMessage(ActionEvent ev) {
+
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
         mbp.user = getFacesUser();
@@ -399,23 +578,23 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("muniNote");
         mbp.explanation = "";
         mbp.newMessageContent = muniMessageText;
-        
+
         selectedRequest.setMuniNotes(appendNoteBlock(mbp));
         try {
             ceari.updateActionRequestNotes(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Done: Added a municipal-only notes to request ID " + selectedRequest.getRequestID(), ""));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Done: Added a municipal-only notes to request ID " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to update notes, sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to update notes, sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
     }
-    
-    public void attachPublicMessage(ActionEvent ev){
-        
+
+    public void attachPublicMessage(ActionEvent ev) {
+
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
         mbp.user = getFacesUser();
@@ -423,25 +602,25 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("externalNote");
         mbp.explanation = "";
         mbp.newMessageContent = publicMessageText;
-        
+
         selectedRequest.setPublicExternalNotes(appendNoteBlock(mbp));
         try {
             ceari.updateActionRequestNotes(selectedRequest);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                        "Done: Added a public note to request ID " + selectedRequest.getRequestID(), ""));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                    "Done: Added a public note to request ID " + selectedRequest.getRequestID(), ""));
         } catch (IntegrationException ex) {
             System.out.println(ex);
-            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR
-                    , "Unable to update notes, sorry!"
-                    , getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                     "Unable to update notes, sorry!",
+                     getResourceBundle(Constants.MESSAGE_TEXT).getString("systemLevelError")));
         }
-        
+
     }
-    
-    public void deletePhoto(int photoID){
+
+    public void deletePhoto(int photoID) {
         // TODO: remove entry from linker tbale for deleted photos
-        for(Integer pid : this.selectedRequest.getPhotoList()){
-            if(pid.compareTo(photoID) == 0){
+        for (Integer pid : this.selectedRequest.getPhotoList()) {
+            if (pid.compareTo(photoID) == 0) {
                 this.selectedRequest.getPhotoList().remove(pid);
                 break;
             }
@@ -453,13 +632,14 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             System.out.println("CEActionRequessBB.deletePhotograph | " + ex);
         }
     }
-    
-    public void manageActionRequest(CEActionRequest req){
+
+    public void manageActionRequest(CEActionRequest req) {
         System.out.println("ActionRequestManagebb.manageActionRequest req: " + req.getRequestID());
+        getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
+                "You are now managing request ID: " + req.getRequestID(), ""));
         selectedRequest = req;
-        
+
     }
-    
 
     /**
      * @return the ceCaseIDForConnection
@@ -475,67 +655,33 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         this.ceCaseIDForConnection = ceCaseIDForConnection;
     }
 
-    /**
-     * @return the requestList
-     */
-    public List<CEActionRequest> getRequestList() {
-        System.out.println("ActionRequestManageBB.getRequestList");
-        
-        CEActionRequestIntegrator ari = getcEActionRequestIntegrator();
-        SearchParamsCEActionRequests spcear = getSearchParams();
-        if(requestList == null || requestList.isEmpty()){
-            System.out.println("CeActionRequestsBB.getUnlinkedRequestList | unlinkedrequests is null");
-            try {
-                requestList = ari.getCEActionRequestList(spcear);
-            } catch (IntegrationException ex) {
-                System.out.println(ex);
-                getFacesContext().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                                "Unable to load action requests due to an error in the Integration Module", ""));
-            }
-        }
-        return requestList;
-    }
-
-    /**
-     * @param requestList the requestList to set
-     */
-    public void setRequestList(List<CEActionRequest> requestList) {
-        this.requestList = requestList;
-    }
-
-
-  
-    
-    public void updateActionRequestStatus(ActionEvent ev){
+    public void updateActionRequestStatus(ActionEvent ev) {
         System.out.println("updateStatus");
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-        if(selectedChangeToStatus != null){
-            
+        if (selectedChangeToStatus != null) {
+
             selectedRequest.setRequestStatus(selectedChangeToStatus);
             try {
                 ceari.updateActionRequestStatus(selectedRequest);
                 getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, 
-                            "Successfully changed request status for request ID: " + selectedRequest.getCaseID(), ""));
+                        new FacesMessage(FacesMessage.SEVERITY_INFO,
+                                "Successfully changed request status for request ID: " + selectedRequest.getCaseID(), ""));
             } catch (IntegrationException ex) {
                 getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, 
-                            "Unable to update request ID : " + selectedRequest.getCaseID(), ""));
+                        new FacesMessage(FacesMessage.SEVERITY_WARN,
+                                "Unable to update request ID : " + selectedRequest.getCaseID(), ""));
 
-            } 
+            }
         } else {
             getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR
-                        ,"Please select a request status from the drop-down box to proceed" , ""));
-            
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Please select a request status from the drop-down box to proceed", ""));
+
         }
         // force a reload of request list
         requestList = null;
-    
+
     }
-    
-    
 
     /**
      * @return the selectedRequest
@@ -557,7 +703,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
      */
     public List<CEActionRequestStatus> getStatusList() {
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
-        if(statusList == null){
+        if (statusList == null) {
             try {
                 statusList = ceari.getRequestStatusList();
             } catch (IntegrationException ex) {
@@ -617,26 +763,6 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
     }
 
     /**
-     * @return the requestListSize
-     */
-    public int getRequestListSize() {
-        requestList = null;
-        int ls = 0;
-        if(!(getRequestList() == null)){
-         ls = getRequestList().size();
-        } 
-        requestListSize = ls;
-        return requestListSize;
-    }
-
-    /**
-     * @param requestListSize the requestListSize to set
-     */
-    public void setRequestListSize(int requestListSize) {
-        this.requestListSize = requestListSize;
-    }
-
-    /**
      * @return the invalidMessage
      */
     public String getInvalidMessage() {
@@ -655,11 +781,13 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
      */
     public ArrayList<CECase> getCaseListForSelectedProperty() {
         CaseIntegrator ci = getCaseIntegrator();
-        if(selectedRequest != null){
+        if (selectedRequest != null) {
             try {
                 caseListForSelectedProperty = ci.getCECasesByProp(selectedRequest.getRequestProperty());
                 System.out.println("CEActionRequestsBB.getCaseListForSelectedProperty | case list size: " + caseListForSelectedProperty.size());
             } catch (IntegrationException ex) {
+                System.out.println(ex);
+            } catch (CaseLifecyleException ex) {
                 System.out.println(ex);
             }
         }
@@ -704,21 +832,20 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
     /**
      * @return the disabledDueToRoutingNotAllowed
      */
-    
     public boolean getIsDisabledDueToRoutingNotAllowed() {
         CaseCoordinator cc = getCaseCoordinator();
-        
-        disabledDueToRoutingNotAllowed = 
-                !(cc.determineCEActionRequestRoutingActionEnabledStatus(
+
+        disabledDueToRoutingNotAllowed
+                = !(cc.determineCEActionRequestRoutingActionEnabledStatus(
                         selectedRequest,
                         getSessionBean().getFacesUser()));
-        System.out.println("CEACtionRequestsBB.isRoutingAllowedOnSelectedRequest | Status: " 
-                + disabledDueToRoutingNotAllowed);
+
         return disabledDueToRoutingNotAllowed;
     }
 
     /**
-     * @param disabledDueToRoutingNotAllowed the disabledDueToRoutingNotAllowed to set
+     * @param disabledDueToRoutingNotAllowed the disabledDueToRoutingNotAllowed
+     * to set
      */
     public void setDisabledDueToRoutingNotAllowed(boolean disabledDueToRoutingNotAllowed) {
         this.disabledDueToRoutingNotAllowed = disabledDueToRoutingNotAllowed;
@@ -841,7 +968,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
      */
     public boolean isDisablePACCControl() {
         disablePACCControl = false;
-        if(getSessionBean().getFacesUser().getKeyCard().isHasMuniStaffPermissions() == false){
+        if (getSessionBean().getFacesUser().getKeyCard().isHasMuniStaffPermissions() == false) {
             disablePACCControl = true;
         }
         return disablePACCControl;
@@ -869,5 +996,77 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
     }
 
 
+    /**
+     * @return the selectedQueryCEAR
+     */
+    public QueryCEAR getSelectedQueryCEAR() {
+        return selectedQueryCEAR;
+    }
+
+    /**
+     * @param selectedQueryCEAR the selectedQueryCEAR to set
+     */
+    public void setSelectedQueryCEAR(QueryCEAR selectedQueryCEAR) {
+        this.selectedQueryCEAR = selectedQueryCEAR;
+    }
+
+    /**
+     * @return the queryList
+     */
+    public List<QueryCEAR> getQueryList() {
+        return queryList;
+    }
+
+    /**
+     * @param queryList the queryList to set
+     */
+    public void setQueryList(List<QueryCEAR> queryList) {
+        this.queryList = queryList;
+    }
+
+    /**
+     * @return the requestList
+     */
+    public List<CEActionRequest> getRequestList() {
+        return requestList;
+    }
+
+    /**
+     * @param requestList the requestList to set
+     */
+    public void setRequestList(List<CEActionRequest> requestList) {
+        this.requestList = requestList;
+    }
+
+    /**
+     * @return the reportConfig
+     */
+    public ReportCEARList getReportConfig() {
+        return reportConfig;
+    }
+
+    /**
+     * @param reportConfig the reportConfig to set
+     */
+    public void setReportConfig(ReportCEARList reportConfig) {
+        this.reportConfig = reportConfig;
+    }
+
+    /**
+     * @return the requestReasonDonut
+     */
+    public DonutChartModel getRequestReasonDonut() {
+        if(requestReasonDonut == null){
+            requestReasonDonut = new DonutChartModel();
+        }
+        return requestReasonDonut;
+    }
+
+    /**
+     * @param requestReasonDonut the requestReasonDonut to set
+     */
+    public void setRequestReasonDonut(DonutChartModel requestReasonDonut) {
+        this.requestReasonDonut = requestReasonDonut;
+    }
 
 }

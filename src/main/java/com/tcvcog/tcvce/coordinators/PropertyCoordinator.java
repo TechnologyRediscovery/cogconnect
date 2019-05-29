@@ -18,6 +18,7 @@ Council of Governments, PA
 package com.tcvcog.tcvce.coordinators;
 
 import com.tcvcog.tcvce.application.BackingBeanUtils;
+import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.PersonType;
@@ -73,11 +74,13 @@ public class PropertyCoordinator extends BackingBeanUtils implements Serializabl
     }
     
     /**
-     * 
+     * Returns PropertyWithLists without default unit. Useful for displaying a list of units for
+     * a multiunit property.
      * @param prop
      * @return PropertyWithLists object
+     * @throws com.tcvcog.tcvce.domain.CaseLifecyleException
      */
-    public PropertyWithLists checkPropertyForUnits(Property prop){
+    public PropertyWithLists getPropertyUnitsWithoutDefault(Property prop) throws CaseLifecyleException{
         PropertyIntegrator pi = getPropertyIntegrator();
         PropertyWithLists propWithLists = pi.getNewPropertyWithLists();
         
@@ -89,7 +92,7 @@ public class PropertyCoordinator extends BackingBeanUtils implements Serializabl
         }
         
         // Removes the default, automatically generated PropertyUnit        
-        ArrayList<PropertyUnit> unitList = propWithLists.getUnitList();
+        List<PropertyUnit> unitList = propWithLists.getUnitList();
         PropertyUnit defaultUnit = null;
         for(PropertyUnit unit:unitList){
             if(unit.getUnitNumber().equals("-1")){
@@ -100,12 +103,24 @@ public class PropertyCoordinator extends BackingBeanUtils implements Serializabl
 
         return propWithLists;
     }
-    
-    public ArrayList<PersonType> generatePersonTypeRequirements(OccPermitApplication occpermitapp){
+    /**
+     * Returns PropertyWithLists with all units, including default unit.
+     * @param prop
+     * @return PropertyWithLists object
+     * @throws CaseLifecyleException 
+     */
+    public PropertyWithLists getPropertyUnits(Property prop) throws CaseLifecyleException{
+        PropertyIntegrator pi = getPropertyIntegrator();
+        PropertyWithLists propWithLists = pi.getNewPropertyWithLists();
         
-        
-        return new ArrayList<>();
-    }
-    
+        try{
+            propWithLists = pi.getPropertyWithLists(prop.getPropertyID());
+            
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+        }     
+
+        return propWithLists;
+    }   
     
 }

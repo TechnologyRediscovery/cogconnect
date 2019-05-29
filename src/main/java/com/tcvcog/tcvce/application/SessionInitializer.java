@@ -19,13 +19,17 @@ package com.tcvcog.tcvce.application;
 
 import com.tcvcog.tcvce.coordinators.CaseCoordinator;
 import com.tcvcog.tcvce.coordinators.PersonCoordinator;
+import com.tcvcog.tcvce.coordinators.SearchCoordinator;
 import com.tcvcog.tcvce.coordinators.UserCoordinator;
 import com.tcvcog.tcvce.domain.AuthorizationException;
+import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
+import com.tcvcog.tcvce.entities.CEActionRequest;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.User;
+import com.tcvcog.tcvce.entities.search.QueryCECase;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.CodeIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
@@ -64,7 +68,7 @@ public class SessionInitializer extends BackingBeanUtils implements Serializable
      * or the error page
      * @throws com.tcvcog.tcvce.domain.IntegrationException
      */
-    public String initiateInternalSession() throws IntegrationException{
+    public String initiateInternalSession() throws IntegrationException, CaseLifecyleException{
         CodeIntegrator ci = getCodeIntegrator();
         System.out.println("SessionInitializer.initiateInternalSession");
         FacesContext facesContext = getFacesContext();
@@ -94,7 +98,7 @@ public class SessionInitializer extends BackingBeanUtils implements Serializable
                 //and then and store in sessionBean
                 getSessionBean().setActiveCodeSet(ci.getCodeSetBySetID(muni.getDefaultCodeSetID()));
                 
-                populateSessionObjectQueues(extractedUser);
+                populateSessionObjectQueues(extractedUser, muni);
 
                 getLogIntegrator().makeLogEntry(extractedUser.getUserID(), getSessionID(), 
                         Integer.parseInt(getResourceBundle(Constants.LOGGING_CATEGORIES).getString("login")), 
@@ -133,32 +137,40 @@ public class SessionInitializer extends BackingBeanUtils implements Serializable
 
     
         
-    private void populateSessionObjectQueues(User u) throws IntegrationException{
+    private void populateSessionObjectQueues(User u, Municipality m) throws IntegrationException, CaseLifecyleException{
+        SessionBean sessionBean = getSessionBean();
+        
         PersonCoordinator persCoord = getPersonCoordinator();
         CaseCoordinator caseCoord = getCaseCoordinator();
         PropertyIntegrator propI = getPropertyIntegrator();
         PersonIntegrator persInt = getPersonIntegrator();
         CaseIntegrator caseInt = getCaseIntegrator();
+        SearchCoordinator searchCoord = getSearchCoordinator();
         
-        getSessionBean().setPersonQueue(persCoord.loadPersonHistoryList(u));
         
-        getSessionBean().setcECaseQueue(caseCoord.getOpenCECaseList(getSessionBean().getActiveMuni()));
+        sessionBean.setPersonQueue(persCoord.loadPersonHistoryList(u));
+        sessionBean.setcECaseQueue(caseCoord.getUserCaseHistoryList(u));
+        
+        QueryCECase queryCECase = searchCoord.runQuery(searchCoord.getQueryInitialCECASE(m, u));
+        sessionBean.setSessionQueryCECase(queryCECase);
         
         Property p = propI.getProperty(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
                 .getString("arbitraryPlaceholderPropertyID")));
-        getSessionBean().setActiveProp(p);
+        sessionBean.setActiveProp(p);
 
-        getSessionBean().setActivePerson(persInt.getPerson(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
+        sessionBean.setActivePerson(persInt.getPerson(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
                 .getString("arbitraryPlaceholderPersonID"))));
-
+        
+        sessionBean.setSessionQueryCEAR(searchCoord.getQueryInitialCEAR(u, m));
+        
         CECase c = caseInt.getCECase(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
                 .getString("arbitraryPlaceholderCaseID")));
-        getSessionBean().setcECase(c);
+        sessionBean.setcECase(c);
         
-//        getSessionBean().setcECaseQueue(new ArrayList<CECase>());
-//        getSessionBean().getcECaseQueue().add(c);
+//        sessionBean.setcECaseQueue(new ArrayList<CECase>());
+//        sessionBean.getcECaseQueue().add(c);
         
-        getSessionBean().setPropertyQueue(new ArrayList<Property>());
-        getSessionBean().getPropertyQueue().add(p);
+        sessionBean.setPropertyQueue(propI.getPropertyHistoryList(u));
+        sessionBean.getPropertyQueue().add(p);
     }
 }
