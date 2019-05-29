@@ -10,7 +10,7 @@ import re
 import time
 import psycopg2
 import itertools
-# import csv_utils
+#import csv_utils
 import requests
 import bs4
 from unidecode import unidecode
@@ -109,12 +109,12 @@ def get_db_conn():
     )
     return db_conn
 
+
 county_info_cache = {}
 def get_county_page_for(parcel_id):
     if parcel_id in county_info_cache:
         return county_info_cache[parcel_id]
     COUNTY_REAL_ESTATE_URL = ('http://www2.county.allegheny.pa.us/'
-                              'RealEstate/GeneralInfo.aspx?')
     search_parameters = {
         'ParcelID': parcel_id,
         'SearchType': 3,
@@ -123,7 +123,7 @@ def get_county_page_for(parcel_id):
     print("waiting:" + str(waittime))
     time.sleep(waittime)
     try:
-        response = requests.get(
+        response s= requests.get(
                 COUNTY_REAL_ESTATE_URL,
                 params=search_parameters,
                 timeout=5)
@@ -137,6 +137,8 @@ def get_county_page_for(parcel_id):
                 timeout=5)
     county_info_cache[parcel_id] = response.text
     return response.text
+    
+
 
 def extract_owneraddress(property_html):
     print('--------- extracting owner address ------------')
@@ -281,7 +283,7 @@ def extract_and_insert_person(rawhtml, ownername, personid, propinserts):
             insertmap['address_street'] = owneraddrmap['street']
             insertmap['address_city'] = owneraddrmap['city']
             insertmap['address_state'] = owneraddrmap['state']
-            insertmap['address_zip'] = owneraddrmap['zipc']
+            insertmap['address_zip']owneraddrmap = owneraddrmap['zipc']
             insertmap['notes'] = notemsg + ownername + " Raw Address: " + owneraddrmap['notes_adrdump']
         else:
             print("Property owner has separate mailing address.")
@@ -432,6 +434,6 @@ def update_persons():
     cursor.close()
     print("People updated = " + str(total_changes))
     
+
 if __name__ == '__main__':
     main()
-

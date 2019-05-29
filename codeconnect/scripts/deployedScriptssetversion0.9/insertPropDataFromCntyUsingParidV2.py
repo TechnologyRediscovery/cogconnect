@@ -120,8 +120,8 @@ def get_db_conn():
         return db_conn
     db_conn = psycopg2.connect(
         dbname="cogdb",
-        user="sylvia",
-        password="c0d3",
+        user="matts207",
+        password="12345",
         host="localhost"
     )
     return db_conn
@@ -273,10 +273,13 @@ def extract_owner_name(property_html):
     persondict = {}
 
     soup = bs4.BeautifulSoup(property_html, 'lxml')
-    owner_full_name = soup.find('span', id=OWNER_NAME_SPAN_ID).text
+    owner_full_name = soup.find('span', id=OWNER_NAME_SPAN_ID)
     print('owner_raw_name:' + str(owner_full_name))
     # Remove extra spaces from owner's name
-    full_owners = re.sub(r'\s+', ' ', owner_full_name.strip())
+    full_owners = re.sub(r'\s+', ' ', owner_full_name.text.strip())
+    persondict['name'] = full_owners
+    persondict['raw'] = str(owner_full_name)
+
     
     #exp = re.compile(r'(\w+|[&])\s+(\w+|[&])\s*(\w*|[&]).*')
     #namegroups = re.search(exp, owner_full_name)
@@ -290,7 +293,7 @@ def extract_owner_name(property_html):
 
     #print(str(persondict['fname']) + ' ' + str(persondict['lname']))
     
-    return full_owners
+    return persondict
 
 def extract_propertyaddress(parcel_id, property_html):
     propaddrmap = {}
@@ -481,16 +484,16 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
             phonecell, phonehome, phonework, email, address_street, address_city, 
             address_state, address_zip, notes, lastupdated, expirydate, isactive, 
             isunder18, humanverifiedby,compositelname, mailing_address_street, mailing_address_city,
-            mailing_address_state, mailing_address_zip, useseparatemailingaddr, mailing_address_thirdline)
+            mailing_address_state, mailing_address_zip, useseparatemailingaddr, mailing_address_thirdline,
+            ghostof, ghostby, ghosttimestamp, cloneof, clonedby, clonetimestamp, referenceperson, rawtext)
     VALUES (%(personid)s, cast ( 'ownercntylookup' as persontype), 
             %(muni_municode)s, NULL, %(lname)s, 'Property Owner', 
             NULL, NULL, NULL, NULL, %(address_street)s, %(address_city)s, 
             %(address_state)s, %(address_zip)s, %(notes)s, now(), NULL, TRUE, 
             FALSE, NULL, true, %(mailing_street)s, %(mailing_city)s, %(mailing_state)s, %(mailing_zip)s,
-            %(mailingsameasres)s, %(thirdline)s);
+            %(mailingsameasres)s, %(thirdline)s, NULL, NULL, NULL, NULL, NULL, NULL, NULL, %(rawhtml)s);
     """
-    
-    
+
     insertmap = {}
     
     # load up vars for use in SQL from each of the parse methods
@@ -504,11 +507,14 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
     insertmap['mailing_zip'] = None
     insertmap['thirdline'] = None
     insertmap['mailingsameasres'] = 'true'
-    
+
     try:
         ownername = extract_owner_name(rawhtml)
-        insertmap['lname'] = ownername
+        insertmap['lname'] = ownername['name']
+        insertmap['rawhtml'] = ownername['raw']
         print('extracted owner:' + insertmap['lname'] )
+        print('extracted owner raw:' + insertmap['rawhtmls'] )
+
 
     except Exception:
         print("Malformed owner name at e and i person")
@@ -634,18 +640,18 @@ def insert_property_basetableinfo():
 
         print('Inserting parcelid data: %s' % (parid))
         
-        try:
+        #ry:
             # execute insert on property table
-            cursor.execute(insert_sql, insertmap)
+        cursor.execute(insert_sql, insertmap)
             # commit core propertytable insert
-            db_conn.commit()
-            propertycount = propertycount + 1
-            print('----- committed property core table -----')
-        except:
-            print('ERROR: unable to insert base property data...skipping\n')
-            print('********* MOVING ON ********************')
-            logerror_aux(parid)
-            continue
+        db_conn.commit()
+        propertycount = propertycount + 1
+        print('----- committed property core table -----')
+        #except:
+        #print('ERROR: unable to insert base property data...skipping\n')
+        #print('********* MOVING ON ********************')
+        #logerror_aux(parid)
+            #continue
         try:
         # this try catches soup related errors
         # and sql errors bubbling up from the extraction methods that also commit
@@ -696,7 +702,6 @@ if __name__ == '__main__':
 
 
 # In[ ]:
-
 
 
 
