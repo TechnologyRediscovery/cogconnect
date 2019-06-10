@@ -163,7 +163,7 @@ def connect_person_to_property(propertyid, personid):
     insert_sql = """
         INSERT INTO public.propertyperson(
             property_propertyid, person_personid)
-    VALUES (%(prop)s, %(pers)s);
+        VALUES (%(prop)s, %(pers)s);
     """
     insertmap = {}
     
@@ -560,9 +560,17 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
         
     print(insertmap['mailing_zip'])
     if insertmap['address_street']:
-        print('extracted owner address:'             + ' ' + insertmap['address_street']             + ' ' + insertmap['address_city']             + ', ' + insertmap['address_state']             + ' ' + insertmap['address_zip'])
+        print('extracted owner address:' + ' '
+        + insertmap['address_street'] + ' ' +
+        insertmap['address_city'] + ', ' +
+        insertmap['address_state']
+        + ' ' + insertmap['address_zip'])
     if insertmap['mailing_street']:
-        print('extracted mailing address:'             + ' ' + insertmap['mailing_street']             + ' ' + insertmap['mailing_city']             + ', ' + insertmap['mailing_state']             + ' ' + insertmap['mailing_zip'] )
+        print('extracted mailing address:' 
+        + ' ' + insertmap['mailing_street']
+        + ' ' + insertmap['mailing_city']
+        + ', ' + insertmap['mailing_state']
+        + ' ' + insertmap['mailing_zip'])
     
     print('Inserting person data for id: %s' % (insertmap['personid']))
     print('person notes:' + insertmap['notes'])
@@ -573,7 +581,42 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
     # commit core propertytable insert
 
 
+
 # In[133]:
+
+def create_ce_event(caseid):
+    insertmap = {}
+    insertsql = """INSERT INTO public.ceevent(
+    eventid, ceeventcategory_catid, cecase_caseid, dateofrecord, eventtimestamp,
+    eventdescription, owner_userid, disclosetomunicipality, disclosetopublic, activeevent,
+    requiresviewconfirmation, hidden, notes, responsetimestamp, actionrequestedby_userid,
+    respondernotes, responderintended_userid, requestedeventcat_catid, requestedevent_eventid,
+    rejeecteventrequest, responderactual_userid, responseevent_eventid, directrequesttodefaultmuniceo)
+    VALUES (?, ?, %(caseid)s, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    insertmap['caseid'] = caseid
+
+
+def create_cecase(propid, caseid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+    #selectPropCase = """SELECT caseid FROM public.cecase WHERE """
+
+
+    insertsql = """INSERT INTO public.cecase(
+    caseid, cecasepubliccc, property_propertyid, propertyunit_unitid,
+    login_userid, casename, casephase, originationdate, closingdate,
+    creationtimestamp, notes, paccenabled, allowuplinkaccess, propertyinfocase)
+    VALUES (%(caseid)s, 111111, %(propid)s, NULL, %(updater)s, %(casename)s, cast ('CountySiteImport' as casephase), now(),
+    now(), now(), %(notes)s, FALSE, NULL, NULL);"""
+
+    imap = {}
+    imap['caseid'] = caseid
+    imap['propid'] = propid
+    imap['casename'] = "Import from county site"
+    imap['notes'] = "Initial case for each property"
+    imap['updater'] = UPDATING_USER_ID
+    cursor.execute(insertsql, imap)
+    db_conn.commit()
 
 
 def insert_property_basetableinfo():
@@ -582,6 +625,15 @@ def insert_property_basetableinfo():
     parcelgenerator = get_nextparcelid(PARID_FILE)
     propertyidgenerator = get_nextpropertyid(muni_idbase_map[current_muni])
     personidgenerator = get_nextpersonid(person_idbase_map[current_muni])
+
+    selectMaxCaseID = "SELECT MAX(caseid), MAX(eventid) FROM public.cecase INNER JOIN public."
+    cursor.execute(selectMaxCaseID, vars=None)
+    next_caseid = cursor.fetchone()[0]
+    if next_caseid == None:
+        next_caseid = 1
+    print(next_caseid)
+    cursor.close()
+    cursor = db_conn.cursor()
 
     # user 99 is the cog robot, Sylvia
     insert_sql = """
@@ -640,27 +692,27 @@ def insert_property_basetableinfo():
 
         print('Inserting parcelid data: %s' % (parid))
         
-        #ry:
-            # execute insert on property table
-        cursor.execute(insert_sql, insertmap)
-            # commit core propertytable insert
-        db_conn.commit()
-        propertycount = propertycount + 1
-        print('----- committed property core table -----')
-        #except:
-        #print('ERROR: unable to insert base property data...skipping\n')
-        #print('********* MOVING ON ********************')
-        #logerror_aux(parid)
-            #continue
+        try:
+            #execute insert on property table
+            cursor.execute(insert_sql, insertmap)
+                # commit core propertytable insert
+            db_conn.commit()
+            propertycount = propertycount + 1
+            print('----- committed property core table -----')
+        except:
+            print('ERROR: unable to insert base property data...skipping\n')
+            print('********* MOVING ON ********************')
+            logerror_aux(parid)
+            continue
         try:
         # this try catches soup related errors
         # and sql errors bubbling up from the extraction methods that also commit
             personid = next(personidgenerator)
-            print(1)
+            #print(1)
             extract_and_insert_person(rawhtml, propid, personid, addrmap)
-            print(2)
+            #print(2)
             connect_person_to_property(propid, personid)
-            print(3)
+            #print(3)
             personcount = personcount + 1
         except:
             print('ERROR: unable to extract, commit, or connect person owner\n')
@@ -673,6 +725,13 @@ def insert_property_basetableinfo():
             print('ERROR: unable to create unit zero for property no.\n'+ str(propid))
             logerror(parid)
             continue
+        try:
+            create_cecase(propid, next_caseid)
+            print("cecase inserted")
+            next_caseid += 1
+        except:
+            print("ERROR: unable to insert new cecase")
+            break
         print('--------- running totals --------')
         print('Props inserted: ' + str(propertycount))
         print('Persons inserted: ' + str(personcount))
@@ -702,6 +761,8 @@ if __name__ == '__main__':
 
 
 # In[ ]:
+
+"""Add event for each update/ change in occupancy"""
 
 
 

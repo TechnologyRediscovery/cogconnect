@@ -318,7 +318,6 @@ public class SessionBean extends BackingBeanUtils implements Serializable{
      * @param activeMuni the activeMuni to set
      */
     public void setActiveMuni(Municipality activeMuni) {
-        System.out.println("MissionControlBB.setActiveMuni | set: " + activeMuni.getMuniName());
         this.activeMuni = activeMuni;
     }
 

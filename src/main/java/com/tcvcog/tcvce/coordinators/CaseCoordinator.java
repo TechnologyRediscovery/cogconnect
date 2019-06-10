@@ -87,7 +87,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
      */
     public CECase configureCECase(CECase cse) throws CaseLifecyleException{
         
-        setCaseStage(cse);
+        //setCaseStage(cse);
         cse.setShowHiddenEvents(false);
         cse.setShowInactiveEvents(false);
         
