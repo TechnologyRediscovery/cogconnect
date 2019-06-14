@@ -584,7 +584,10 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
 
 # In[133]:
 
-def create_ce_event(caseid):
+def create_ce_event(caseid, eventid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+
     insertmap = {}
     insertsql = """INSERT INTO public.ceevent(
     eventid, ceeventcategory_catid, cecase_caseid, dateofrecord, eventtimestamp,
@@ -592,8 +595,12 @@ def create_ce_event(caseid):
     requiresviewconfirmation, hidden, notes, responsetimestamp, actionrequestedby_userid,
     respondernotes, responderintended_userid, requestedeventcat_catid, requestedevent_eventid,
     rejeecteventrequest, responderactual_userid, responseevent_eventid, directrequesttodefaultmuniceo)
-    VALUES (?, ?, %(caseid)s, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+    VALUES (%(eventid)s, 141, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
+    now(), NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, FALSE);"""
     insertmap['caseid'] = caseid
+    insertmap['eventid'] = eventid
+    cursor.execute(insertsql, insertmap)
+    db_conn.commit()
 
 
 def create_cecase(propid, caseid):
@@ -626,11 +633,22 @@ def insert_property_basetableinfo():
     propertyidgenerator = get_nextpropertyid(muni_idbase_map[current_muni])
     personidgenerator = get_nextpersonid(person_idbase_map[current_muni])
 
-    selectMaxCaseID = "SELECT MAX(caseid), MAX(eventid) FROM public.cecase INNER JOIN public."
+    selectMaxCaseID = "SELECT MAX(caseid), MAX(eventid) FROM public.cecase FULL OUTER JOIN public.ceevent ON cecase.caseid=ceevent.cecase_caseid;"
     cursor.execute(selectMaxCaseID, vars=None)
-    next_caseid = cursor.fetchone()[0]
+    returned = cursor.fetchone()
+    print(returned)
+    next_caseid = returned[0]
+    next_eventid = returned[1]
     if next_caseid == None:
         next_caseid = 1
+    else:
+        next_caseid += 1
+
+    if next_eventid == None:
+        next_eventid = 1
+    else:
+        next_eventid += 1
+
     print(next_caseid)
     cursor.close()
     cursor = db_conn.cursor()
@@ -727,11 +745,19 @@ def insert_property_basetableinfo():
             continue
         try:
             create_cecase(propid, next_caseid)
-            print("cecase inserted")
+            print("-------cecase inserted-------")
+            try:
+                create_ce_event(next_caseid, next_eventid)
+                print("-------ce event inserted-------")
+            except:
+                print("ERROR: unable to insert new ce event")
+                break
             next_caseid += 1
+            next_eventid += 1
         except:
             print("ERROR: unable to insert new cecase")
             break
+
         print('--------- running totals --------')
         print('Props inserted: ' + str(propertycount))
         print('Persons inserted: ' + str(personcount))

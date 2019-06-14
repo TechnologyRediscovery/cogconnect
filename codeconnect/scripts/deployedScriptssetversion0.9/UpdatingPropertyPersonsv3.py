@@ -379,7 +379,6 @@ def update_persons():
     print(firstavailablepersonid)
     cursor.close()
     print(propidlist[0])
-    return
 
     for p in propidlist:
         propinserts = {}
@@ -432,12 +431,11 @@ def update_persons():
                 personnotes += format("FORMER MAILING ADDRESS: %s %s, %s %s", (propinserts['mailing_street'], propinserts['mailing_city'], propinserts['mailing_state'], propinserts['mailing_zip']))
                 
 
-                sql = """UPDATE person.
+                sql = """UPDATE person."""
 
-
-        print('\n')
+        except:
+            continue
         #extract_and_insert_person(rawhtml, ownername, personid, propinserts)
-    
 if __name__ == '__main__':
     main()
 
