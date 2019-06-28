@@ -14,6 +14,7 @@ import itertools
 import requests
 import bs4
 from unidecode import unidecode
+import traceback
 
 CSV_FILE_ENCODING = 'utf-8'
 # global municodemap
@@ -43,17 +44,16 @@ def main():
 
     global PARID_FILE
     # PARID_FILE = 'parcelidlists/wilmerdingparids.csv'
-    # PARID_FILE = 'parcelidlists/parcelidstest.csv'
+    #PARID_FILE = 'parcelidlists/parcelidstest.csv'
     #PARID_FILE = 'parcelidlists/pitcairnparids_correct.csv'
     #PARID_FILE = 'parcelidlists/eastmckeesportparids.csv'
     #PARID_FILE = 'parcelidlists/wilkinsparcelids.csv'
-    #PARID_FILE = 'parcelidlists/chalfantparcelids.csv'
-    PARID_FILE = 'parcelidlists/swissvaleparcelids.csv'
+    PARID_FILE = 'parcelidlists/chalfantparcelids.csv'
+    #PARID_FILE = 'parcelidlists/swissvaleparcelids.csv'
     
     # used as the access key for muni codes and ID bases in the dictionaries below
     global current_muni
-    current_muni = 'swissvale'
-
+    current_muni = 'chalfant'
     # use as floor value for all new propertyIDs
     global PROP_ID_BASE
     PROP_ID_BASE = 100000
@@ -584,7 +584,7 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
 
 # In[133]:
 
-def create_ce_event(caseid, eventid):
+def create_ce_event(caseid):
     db_conn = get_db_conn()
     cursor = db_conn.cursor()
 
@@ -595,15 +595,14 @@ def create_ce_event(caseid, eventid):
     requiresviewconfirmation, hidden, notes, responsetimestamp, actionrequestedby_userid,
     respondernotes, responderintended_userid, requestedeventcat_catid, requestedevent_eventid,
     rejeecteventrequest, responderactual_userid, responseevent_eventid, directrequesttodefaultmuniceo)
-    VALUES (%(eventid)s, 141, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
+    VALUES (DEFAULT, 211, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
     now(), NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, FALSE);"""
     insertmap['caseid'] = caseid
-    insertmap['eventid'] = eventid
     cursor.execute(insertsql, insertmap)
     db_conn.commit()
 
 
-def create_cecase(propid, caseid):
+def create_cecase(propid):
     db_conn = get_db_conn()
     cursor = db_conn.cursor()
     #selectPropCase = """SELECT caseid FROM public.cecase WHERE """
@@ -613,17 +612,27 @@ def create_cecase(propid, caseid):
     caseid, cecasepubliccc, property_propertyid, propertyunit_unitid,
     login_userid, casename, casephase, originationdate, closingdate,
     creationtimestamp, notes, paccenabled, allowuplinkaccess, propertyinfocase)
-    VALUES (%(caseid)s, 111111, %(propid)s, NULL, %(updater)s, %(casename)s, cast ('CountySiteImport' as casephase), now(),
-    now(), now(), %(notes)s, FALSE, NULL, NULL);"""
+    VALUES (DEFAULT, 111111, %(propid)s, NULL, %(updater)s, %(casename)s, cast ('CountySiteImport' as casephase), now(),
+    now(), now(), %(notes)s, FALSE, NULL, TRUE);"""
 
     imap = {}
-    imap['caseid'] = caseid
     imap['propid'] = propid
     imap['casename'] = "Import from county site"
     imap['notes'] = "Initial case for each property"
     imap['updater'] = UPDATING_USER_ID
     cursor.execute(insertsql, imap)
+    print("Executed")
     db_conn.commit()
+
+def get_caseid(propid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+
+    caseidsql = """SELECT caseid FROM public.cecase WHERE property_propertyid=%(prop)s AND propertyinfocase=TRUE"""
+    cursor.execute(caseidsql, dict(prop=propid))
+    props = cursor.fetchall()
+    print(props)
+    return props[0]
 
 
 def insert_property_basetableinfo():
@@ -633,23 +642,6 @@ def insert_property_basetableinfo():
     propertyidgenerator = get_nextpropertyid(muni_idbase_map[current_muni])
     personidgenerator = get_nextpersonid(person_idbase_map[current_muni])
 
-    selectMaxCaseID = "SELECT MAX(caseid), MAX(eventid) FROM public.cecase FULL OUTER JOIN public.ceevent ON cecase.caseid=ceevent.cecase_caseid;"
-    cursor.execute(selectMaxCaseID, vars=None)
-    returned = cursor.fetchone()
-    print(returned)
-    next_caseid = returned[0]
-    next_eventid = returned[1]
-    if next_caseid == None:
-        next_caseid = 1
-    else:
-        next_caseid += 1
-
-    if next_eventid == None:
-        next_eventid = 1
-    else:
-        next_eventid += 1
-
-    print(next_caseid)
     cursor.close()
     cursor = db_conn.cursor()
 
@@ -744,17 +736,18 @@ def insert_property_basetableinfo():
             logerror(parid)
             continue
         try:
-            create_cecase(propid, next_caseid)
+            create_cecase(propid)
             print("-------cecase inserted-------")
+            caseid = get_caseid(propid)
+            print("-----found case id-----")
             try:
-                create_ce_event(next_caseid, next_eventid)
+                create_ce_event(caseid)
                 print("-------ce event inserted-------")
             except:
                 print("ERROR: unable to insert new ce event")
                 break
-            next_caseid += 1
-            next_eventid += 1
         except:
+            traceback.print_last()
             print("ERROR: unable to insert new cecase")
             break
 

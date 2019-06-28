@@ -351,6 +351,47 @@ def update_isactive(personid):
     cursor.close()
     print("----Old person set to inactive----")
 
+
+def create_ce_event(caseid, eventid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+
+    insertmap = {}
+    insertsql = """INSERT INTO public.ceevent(
+    eventid, ceeventcategory_catid, cecase_caseid, dateofrecord, eventtimestamp,
+    eventdescription, owner_userid, disclosetomunicipality, disclosetopublic, activeevent,
+    requiresviewconfirmation, hidden, notes, responsetimestamp, actionrequestedby_userid,
+    respondernotes, responderintended_userid, requestedeventcat_catid, requestedevent_eventid,
+    rejeecteventrequest, responderactual_userid, responseevent_eventid, directrequesttodefaultmuniceo)
+    VALUES (%(eventid)s, 141, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
+    now(), NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, FALSE);"""
+    insertmap['caseid'] = caseid
+    insertmap['eventid'] = eventid
+    cursor.execute(insertsql, insertmap)
+    db_conn.commit()
+
+
+def create_cecase(propid, caseid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+    #selectPropCase = """SELECT caseid FROM public.cecase WHERE """
+
+
+    insertsql = """INSERT INTO public.cecase(
+    caseid, cecasepubliccc, property_propertyid, propertyunit_unitid,
+    login_userid, casename, casephase, originationdate, closingdate,
+    creationtimestamp, notes, paccenabled, allowuplinkaccess, propertyinfocase)
+    VALUES (%(caseid)s, 111111, %(propid)s, NULL, %(updater)s, %(casename)s, cast ('CountySiteImport' as casephase), now(),
+    now(), now(), %(notes)s, FALSE, NULL, NULL);"""
+
+    imap = {}
+    imap['caseid'] = caseid
+    imap['propid'] = propid
+    imap['casename'] = "Import from county site"
+    imap['notes'] = "Initial case for each property"
+    imap['updater'] = UPDATING_USER_ID
+    cursor.execute(insertsql, imap)
+    db_conn.commit()
     
 def update_persons():
     db = get_db_conn()
@@ -358,11 +399,14 @@ def update_persons():
 
     props1 = "SELECT propertyid, parid, address, addr_city, addr_state, addr_zip FROM public.property WHERE municipality_municode=%s ORDER BY propertyid;"
     propperson = "SELECT person_personid FROM public.propertyperson WHERE property_propertyid = %s;"
+
     props = """SELECT person.personid, person.lname, person.address_street, person.address_city, person.address_state,
-    person.address_zip, person.mailing_address_street, person.useseparatemailingaddr, property.propertyid, person.notes, property.parid, person.mailing_address_city, person.mailing_address_state, person.mailing_address_zip,
-        (SELECT MAX(personid) FROM person WHERE muni_municode = 111) FROM ((public.person INNER JOIN public.propertyperson
+        person.address_zip, person.mailing_address_street, person.useseparatemailingaddr, property.propertyid, person.notes,
+        property.parid, person.mailing_address_city, person.mailing_address_state, person.mailing_address_zip, cecase.caseid
+        FROM ((public.person INNER JOIN public.propertyperson
             ON person.personid=propertyperson.person_personid) INNER JOIN public.property 
-            ON property.propertyid=propertyperson.property_propertyid) WHERE person.isactive=true 
+            ON property.propertyid=propertyperson.property_propertyid) INNER JOIN public.cecase
+            ON property.propertyid=cecase.property_propertyid WHERE person.isactive=true 
             AND person.muni_municode = 111;"""
     personSQL = "SELECT lname FROM public.person WHERE "
     highest_person_idSQL = "SELECT MAX(personid) FROM public.person WHERE muni_municode = %s;"
@@ -370,17 +414,17 @@ def update_persons():
     cursor = db.cursor()
     cursor.execute(props, (municode, ))
     propidlist = cursor.fetchall()
-    cursor.close()
 
-    cursor = db.cursor()
+
     print(municode)
     cursor.execute(highest_person_idSQL, (municode,))
     firstavailablepersonid = cursor.fetchall()[0][0] + 1
     print(firstavailablepersonid)
-    cursor.close()
     print(propidlist[0])
 
     for p in propidlist:
+        print(p)
+        time.sleep(10)
         propinserts = {}
         propinserts['street'] = p[2]
         propinserts['city'] = p[3]
@@ -391,6 +435,7 @@ def update_persons():
         propinserts['mailing_state'] = p[12]
         propinserts['mailing_zip'] = p[13]
         propinserts['uses_separate'] = p[7]
+
         print(propinserts)
         parid = p[10]
         propid = p[8]
@@ -423,19 +468,22 @@ def update_persons():
                 print("ERROR connecting person to property")
                 continue
             firstavailablepersonid += 1
-            continue
+            
+        else:
+            print("-----OWNER IS THE SAME...CONTINUING-----")
 
-        try:
+        """try:
             owneraddrmap = extract_owneraddress(rawhtml)
-            if(propinserts['uses_separate'] == 'false' and propinserts['mailing_street'] != owneraddrmap['street']):
+            if(propinserts['uses_separate'] == 'false' and propinserts[ 'mailing_street'] != owneraddrmap['street']):
                 personnotes += format("FORMER MAILING ADDRESS: %s %s, %s %s", (propinserts['mailing_street'], propinserts['mailing_city'], propinserts['mailing_state'], propinserts['mailing_zip']))
                 
 
-                sql = """UPDATE person."""
+                sql = 'UPDATE person.'
 
         except:
             continue
-        #extract_and_insert_person(rawhtml, ownername, personid, propinserts)
+        #extract_and_insert_person(rawhtml, ownername, personid, propinserts)"""
+
 if __name__ == '__main__':
     main()
 
