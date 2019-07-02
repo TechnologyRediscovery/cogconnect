@@ -85,7 +85,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
 
     public void searchForProperties(ActionEvent event){
         System.out.println("PropSearchBean.searchForPropertiesSingleMuni");
-        PropertyIntegrator pi = new PropertyIntegrator();
+        PropertyIntegrator pi = getPropertyIntegrator();
         
         try {
             setPropList(pi.searchForProperties(getHouseNum(), getStreetName(), getSessionBean().getActiveMuni().getMuniCode()));
@@ -100,6 +100,12 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         }
     }
     
+    public String goToChanges() {
+        
+        return "unitchanges";
+        
+    }
+    
     public String addProperty(){
         //getSessionBean().setActiveProp(new Property());  // we do this after the prop has been inserted
         return "propertyAdd";
@@ -111,7 +117,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     }
     
     public String viewCase(CECase c){
-        getSessionBean().setcECase(c);
+        getSessionBean().setSessionCECase(c);
         return "ceCases";
     }
     

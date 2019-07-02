@@ -20,8 +20,8 @@ import com.tcvcog.tcvce.application.BackingBeanUtils;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.PropertyUnit;
 import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
-import com.tcvcog.tcvce.occupancy.entities.OccupancyInspection;
-import com.tcvcog.tcvce.occupancy.entities.OccInspecFee;
+import com.tcvcog.tcvce.occupancy.entities.OccInspection;
+import com.tcvcog.tcvce.entities.Fee;
 import com.tcvcog.tcvce.occupancy.entities.OccInspecStatus;
 import java.sql.Connection;
 import java.io.Serializable;
@@ -44,12 +44,12 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
         return new ArrayList();
     }
     
-    public void updateOccInspecStatus(OccupancyInspection oi, OccInspecStatus updatedStatus){
+    public void updateOccInspecStatus(OccInspection oi, OccInspecStatus updatedStatus){
         
         
     }
     
-    public void insertOccupanyInspection(OccupancyInspection occupancyInspection) throws IntegrationException{
+    public void insertOccupanyInspection(OccInspection occupancyInspection) throws IntegrationException{
         String query = "INSERT INTO public.occupancyinspection(\n" +
                 "   inspectionid, propertyunitid, login_userid, firstinspectiondate, "
             +   "firstinspectionpass, secondinspectiondate, secondinspectionpass, "
@@ -76,7 +76,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
             }
             stmt.setBoolean(6, occupancyInspection.isSecondInspectionPass());
             stmt.setBoolean(8, occupancyInspection.isTotalFeePaid());
-            stmt.setString(9, occupancyInspection.getOccupancyInspectionNotes());
+            stmt.setString(9, occupancyInspection.getNotes());
             
             
         } catch (SQLException ex) {
@@ -91,7 +91,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
                 
     }
     
-    public void updateOccupancyInspection(OccupancyInspection occInspection) throws IntegrationException {
+    public void updateOccupancyInspection(OccInspection occInspection) throws IntegrationException {
         String query = "UPDATE public.occupancyinspection\n" +
                         "   SET propertyunitid=?, login_userid=?, firstinspectiondate=?, \n" +
                         "       firstinspectionpass=?, secondinspectiondate=?, secondinspectionpass=?, \n" +
@@ -122,7 +122,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
             }
             stmt.setBoolean(6, occInspection.isSecondInspectionPass());
             stmt.setBoolean(8, occInspection.isTotalFeePaid());
-            stmt.setString(9, occInspection.getOccupancyInspectionNotes());
+            stmt.setString(9, occInspection.getNotes());
             stmt.setInt(10, occInspection.getInspectionID());
             System.out.println("TRYING TO EXECUTE UPDATE METHOD");
             stmt.executeUpdate();
@@ -136,7 +136,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
         
     }
     
-    public void deleteOccupancyInspection(OccupancyInspection occInspection) throws IntegrationException{
+    public void deleteOccupancyInspection(OccInspection occInspection) throws IntegrationException{
          String query = "DELETE FROM public.occupancyinspection\n" +
                         " WHERE inspectionid=?;";
         Connection con = getPostgresCon();
@@ -158,8 +158,8 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
         } // close finally
     }
     
-    private OccupancyInspection generateOccupancyInspection(ResultSet rs) throws IntegrationException{
-        OccupancyInspection newInspection = new OccupancyInspection();
+    private OccInspection generateOccupancyInspection(ResultSet rs) throws IntegrationException{
+        OccInspection newInspection = new OccInspection();
         
         try{
             newInspection.setInspectionID(rs.getInt("inspectionid"));
@@ -179,7 +179,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
                 newInspection.setSecondInspectionDate(null);
             }
             newInspection.setTotalFeePaid(rs.getBoolean("totalfeepaid"));
-            newInspection.setOccupancyInspectionNotes(rs.getString("notes"));
+            newInspection.setNotes(rs.getString("notes"));
             
         }catch (SQLException ex){
             System.out.println(ex.toString());
@@ -188,12 +188,12 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
         return newInspection;
     }
     
-    public OccupancyInspection getOccupancyInspection(int inspectionID){
+    public OccInspection getOccupancyInspection(int inspectionID){
         
-        return new OccupancyInspection();
+        return new OccInspection();
     }
     
-    public ArrayList<OccupancyInspection> getOccupancyInspectionList(PropertyUnit pu) throws IntegrationException{
+    public ArrayList<OccInspection> getOccupancyInspectionList(PropertyUnit pu) throws IntegrationException{
         String query = "SELECT inspectionid, propertyunitid, login_userid, firstinspectiondate, \n" +
                     "       firstinspectionpass, secondinspectiondate, secondinspectionpass, \n" +
                     "       resolved, totalfeepaid, notes\n" +
@@ -201,7 +201,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
     Connection con = getPostgresCon();
     ResultSet rs = null;
     PreparedStatement stmt = null;
-    ArrayList<OccupancyInspection> occupancyInspectionList = new ArrayList();
+    ArrayList<OccInspection> occupancyInspectionList = new ArrayList();
     
     try{
         stmt = con.prepareStatement(query);
@@ -223,7 +223,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
     
     }
     
-     public void updateOccupancyInspectionFee(OccInspecFee oif) throws IntegrationException {
+     public void updateOccupancyInspectionFee(Fee oif) throws IntegrationException {
         String query = "UPDATE public.occinspectionfee\n" +
                     "   SET muni_municode=?, feename=?, feeamount=?, effectivedate=?, \n" +
                     "       expirydate=?, notes=? \n" +
@@ -265,14 +265,14 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
     }
     
     
-    public ArrayList<OccInspecFee> getOccupancyInspectionFeeList() throws IntegrationException {
+    public ArrayList<Fee> getOccupancyInspectionFeeList() throws IntegrationException {
             String query = "SELECT feeid, muni_municode, feename, feeamount, effectivedate, expirydate, \n" +
                             "       notes\n" +
                             "  FROM public.occinspectionfee";
             Connection con = getPostgresCon();
             ResultSet rs = null;
             PreparedStatement stmt = null;
-            ArrayList<OccInspecFee> occupancyInspectionFeeList = new ArrayList();
+            ArrayList<Fee> occupancyInspectionFeeList = new ArrayList();
         
         try {
             stmt = con.prepareStatement(query);
@@ -295,7 +295,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
     }
     
        
-    public void insertOccupancyInspectionFee(OccInspecFee occupancyInspectionFee) throws IntegrationException {
+    public void insertOccupancyInspectionFee(Fee occupancyInspectionFee) throws IntegrationException {
         String query = "INSERT INTO public.occinspectionfee(\n" +
                         "            feeid, muni_municode, feename, feeamount, effectivedate, expirydate, \n" +
                         "            notes)\n" +
@@ -335,7 +335,7 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
         
     }
     
-    public void deleteOccupancyInspectionFee(OccInspecFee oif) throws IntegrationException{
+    public void deleteOccupancyInspectionFee(Fee oif) throws IntegrationException{
          String query = "DELETE FROM public.occinspectionfee\n" +
                 " WHERE feeid= ?;";
         Connection con = getPostgresCon();
@@ -358,8 +358,8 @@ public class OccupancyInspectionIntegrator extends BackingBeanUtils implements S
     }
     
     
-    private OccInspecFee generateOccupancyInspectionFee(ResultSet rs) throws IntegrationException {
-        OccInspecFee newOif = new OccInspecFee();
+    private Fee generateOccupancyInspectionFee(ResultSet rs) throws IntegrationException {
+        Fee newOif = new Fee();
         MunicipalityIntegrator mi = getMunicipalityIntegrator();
     
         try {

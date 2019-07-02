@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (C) 2017 Turtle Creek Valley
 Council of Governments, PA
  *
@@ -24,13 +24,16 @@ import com.tcvcog.tcvce.coordinators.SessionSystemCoordinator;
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.EventException;
 import com.tcvcog.tcvce.domain.IntegrationException;
+import com.tcvcog.tcvce.domain.MalformedBOBException;
 import com.tcvcog.tcvce.entities.CEActionRequest;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.Event;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.EventCategory;
 import com.tcvcog.tcvce.entities.EventType;
 import com.tcvcog.tcvce.entities.EventCECaseCasePropBundle;
+import com.tcvcog.tcvce.entities.EventProposal;
+import com.tcvcog.tcvce.entities.EventProposalImplementation;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.User;
@@ -66,14 +69,13 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         String query = "SELECT categoryid, categorytype, title, description, userdeployable, \n" +
                         "       munideployable, publicdeployable, notifycasemonitors, hidable, \n" +
                         "       icon_iconid, requestable, phasechangerule_ruleid"
-                + "  FROM public.ceeventcategory WHERE categoryID = ?";
+                + "  FROM public.eventcategory WHERE categoryID = ?";
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
         EventCategory ec = null;
 
         try {
-
             stmt = con.prepareStatement(query);
             stmt.setInt(1, catID);
             //System.out.println("EventInteegrator.getEventCategory| sql: " + stmt.toString());
@@ -101,7 +103,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         EventCategory ec = new EventCategory();
         CaseIntegrator ci = getCaseIntegrator();
         
-        
         ec.setCategoryID(rs.getInt("categoryid"));
         ec.setEventType(EventType.valueOf(rs.getString("categoryType")));
         ec.setEventCategoryTitle(rs.getString("title"));
@@ -118,33 +119,27 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             ec.setIcon(si.getIcon(rs.getInt("icon_iconid")));
         }
         if(rs.getInt("phasechangerule_ruleid") != 0){
-            ec.setCasePhaseChangeRule(ci.getPhaseChangeRule(rs.getInt("phasechangerule_ruleid")));
+            ec.setCasePhaseChangeRule(ci.getEventRule(rs.getInt("phasechangerule_ruleid")));
         }
-
         return ec;
-
     }
 
     public ArrayList<EventCategory> getEventCategoryList() throws IntegrationException {
-        String query = "SELECT categoryid FROM public.ceeventcategory;";
+        String query = "SELECT categoryid FROM public.eventcategory;";
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
         ArrayList<EventCategory> categoryList = new ArrayList();
 
         try {
-
             stmt = con.prepareStatement(query);
             rs = stmt.executeQuery();
-
             while (rs.next()) {
                 categoryList.add(getEventCategory(rs.getInt("categoryid")));
             }
-
         } catch (SQLException ex) {
             System.out.println(ex.toString());
             throw new IntegrationException("Cannot generate list of event categories", ex);
-
         } finally {
             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
@@ -155,17 +150,15 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
     }
     
     public List<EventCategory> getRequestableEventCategories() throws IntegrationException {
-        String query = "SELECT categoryid FROM public.ceeventcategory WHERE requestable = TRUE;";
+        String query = "SELECT categoryid FROM public.eventcategory WHERE requestable = TRUE;";
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
         ArrayList<EventCategory> categoryList = new ArrayList();
 
         try {
-
             stmt = con.prepareStatement(query);
             rs = stmt.executeQuery();
-
             while (rs.next()) {
                 categoryList.add(getEventCategory(rs.getInt("categoryid")));
             }
@@ -183,11 +176,8 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         return categoryList;
     }
     
-    
-    
-
     public ArrayList<EventCategory> getEventCategoryList(EventType et) throws IntegrationException {
-        String query = "SELECT categoryid FROM public.ceeventcategory WHERE categorytype = cast (? as ceeventtype);";
+        String query = "SELECT categoryid FROM public.eventcategory WHERE categorytype = cast (? as ceeventtype);";
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
@@ -199,7 +189,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             stmt.setString(1, et.toString());
             rs = stmt.executeQuery();
             System.out.println("EventIntegrator.getEventCategoryList | SQL: " + stmt.toString());
-
             while (rs.next()) {
                 categoryList.add(getEventCategory(rs.getInt("categoryid")));
             }
@@ -219,7 +208,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
 
     public void insertEventCategory(EventCategory ec) throws IntegrationException {
 
-        String query = "INSERT INTO public.ceeventcategory(\n"
+        String query = "INSERT INTO public.eventcategory(\n"
                 + "categoryid, "
                 + "categorytype, title, description, "
                 + "userdeployable, munideployable, publicdeployable, "
@@ -248,7 +237,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             stmt.setBoolean(9, ec.isHidable());
             stmt.setInt(10, ec.getIcon().getIconid());
             stmt.setBoolean(11, ec.isRequestable());
-            
 
             System.out.println("EventInteegrator.insertEventCategory| sql: " + stmt.toString());
             stmt.execute();
@@ -265,7 +253,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
 
     public void updateEventCategory(EventCategory ec) throws IntegrationException {
 
-        String query = "UPDATE public.ceeventcategory\n"
+        String query = "UPDATE public.eventcategory\n"
                 + "   SET categorytype=CAST (? as ceeventtype), title=?, description=?, userdeployable=?, \n"
                 + "       munideployable=?, publicdeployable=?, \n"
                 + "       notifycasemonitors=?, phasechangerule_ruleid=?, hidable=?, icon_iconid=?, requestable=? \n"
@@ -309,7 +297,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
     }
 
     public void deleteEventCategory(EventCategory ec) throws IntegrationException {
-        String query = "DELETE FROM public.ceeventcategory\n"
+        String query = "DELETE FROM public.eventcategory\n"
                 + " WHERE categoryid = ?;";
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
@@ -317,7 +305,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         try {
             stmt = con.prepareStatement(query);
             stmt.setInt(1, ec.getCategoryID());
-
             stmt.execute();
 
         } catch (SQLException ex) {
@@ -331,19 +318,23 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
              if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
         } // close finally
     }
+    
+    
+    
+    
 
     /**
      * Attaches an Event to a code enforcement case. No checking of logic occurs
      * in this integration method, so the caller should always be a coordiantor
      * who has vetted the event and the associated case.
      *
-     * @param event a fully-baked event ready for insertion. An EventCECase
-     * contains an integer of the caseID to which the event should be attached
+     * @param event a fully-baked event ready for insertion. An CECaseEvent
+ contains an integer of the caseID to which the event should be attached
      * @return the id of the event just inserted
      * @throws IntegrationException when the system is unable to store event in
      * DB
      */
-    public int insertEvent(EventCECase event) throws IntegrationException {
+    public int insertEvent(CECaseEvent event) throws IntegrationException {
         PersonIntegrator pi = getPersonIntegrator();
         int insertedEventID = 0;
 
@@ -351,13 +342,11 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
                 + "            eventid, ceeventcategory_catid, cecase_caseid, dateofrecord, \n"
                 + "            eventtimestamp, eventdescription, owner_userid, disclosetomunicipality, \n"
                 + "            disclosetopublic, activeevent, \n"
-                + "            hidden, notes, actionrequestedby_userid, \n"
-                + "            directrequesttodefaultmuniceo, responderintended_userid, requestedeventcat_catid)\n"
+                + "            hidden, notes)\n"
                 + "    VALUES (DEFAULT, ?, ?, ?, \n"
                 + "            now(), ?, ?, ?, \n"
                 + "            ?, ?, " // params 7-8
-                + "            ?, ?, ?, "// 9-11
-                + "            ?, ?, ?);";  // 12-14
+                + "            ?, ?);";  // 12-14
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -382,26 +371,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             
             stmt.setBoolean(9, event.isHidden());
             stmt.setString(10, event.getNotes());
-            
-            if(event.getActionRequestedBy()!= null){
-                stmt.setInt(11, event.getActionRequestedBy().getUserID());
-            } else {
-                stmt.setNull(11, java.sql.Types.NULL);
-            }
-            
-            stmt.setBoolean(12, event.isRequestActionByDefaultMuniCEO());
-            
-            if(event.getResponderIntended() != null){
-                stmt.setInt(13, event.getResponderIntended().getUserID());
-            } else {
-                stmt.setNull(13, java.sql.Types.NULL);
-            }
-            
-            if(event.getRequestedEventCat()!= null){
-                stmt.setInt(14, event.getRequestedEventCat().getCategoryID());
-            } else {
-                stmt.setNull(14, java.sql.Types.NULL);
-            }
             
             stmt.execute();
 
@@ -465,7 +434,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
 
     }
 
-    public void updateEvent(EventCECase event) throws IntegrationException {
+    public void updateEvent(CECaseEvent event) throws IntegrationException {
         StringBuilder sb = new StringBuilder();
         sb.append("UPDATE public.ceevent ");
         sb.append("   SET ceeventcategory_catid=?, cecase_caseid=?, dateofrecord=?, ");
@@ -473,9 +442,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         sb.append("       disclosetopublic=?, activeevent=?, ");
         sb.append("       hidden=?, notes=? ");
         
-        if(event.getRequestedEventCat()!= null){
-            sb.append(", requestedeventcat_catid=?, actionrequestedby_userid=?, directrequesttodefaultmuniceo=?, responderintended_userid=?  ");
-        }
         sb.append(" WHERE eventid = ?;");
 
         // TO DO: finish clearing view confirmation
@@ -498,21 +464,8 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             stmt.setBoolean(8, event.isActive());
             stmt.setBoolean(9, event.isHidden());
             stmt.setString(10, event.getNotes());
-            int paramCounter = 10;
-        if(event.getRequestedEventCat()!= null){
-            System.out.println("EventIntegrator.updateEvent: found event category to update");
-            stmt.setInt(++paramCounter, event.getRequestedEventCat().getCategoryID());
-            stmt.setInt(++paramCounter, event.getActionRequestedBy().getUserID());
-            stmt.setBoolean(++paramCounter, event.isRequestActionByDefaultMuniCEO());
-            User u = event.getResponderIntended();
-            if(u != null){
-                stmt.setInt(++paramCounter, event.getResponderIntended().getUserID());
-            } else {
-                stmt.setNull(++paramCounter, java.sql.Types.NULL);
-            }
             
-        }
-            stmt.setInt(++paramCounter, event.getEventID());
+            stmt.setInt(11, event.getEventID());
             
             stmt.executeUpdate();
             System.out.println("EventIntegrator.updateEvent: executed event updated on ID " + event.getEventID());
@@ -527,7 +480,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         } // close finally
     }
 
-    public void deleteEvent(EventCECase event) throws IntegrationException {
+    public void deleteEvent(CECaseEvent event) throws IntegrationException {
         String query = "DELETE FROM public.ceevent WHERE eventid = ?;";
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
@@ -548,9 +501,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
         } // close finally
-
     }
-
    
     /**
      * Legacy note: [Zanda was trippin when he wrote this!]
@@ -562,10 +513,10 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
      * @throws SQLException
      * @throws IntegrationException
      */
-    private EventCECase generateEventFromRS(ResultSet rs) throws SQLException, IntegrationException {
-        EventCECase ev = new EventCECase();
+    private CECaseEvent generateEventFromRS(ResultSet rs) throws SQLException, IntegrationException {
+        CECaseEvent ev = new CECaseEvent();
         UserIntegrator ui = getUserIntegrator();
-        SessionSystemCoordinator ssc = getSsCoordinator();
+        SessionSystemCoordinator ssc = getSessionSystemCoordinator();
         
         ev.setPropertyID(rs.getInt("property_propertyid"));
         ev.setMuniCode(rs.getInt("municipality_municode"));
@@ -592,32 +543,6 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
 
         ev.setHidden(rs.getBoolean("hidden"));
         ev.setNotes(rs.getString("notes"));
-        
-        ev.setRequestedEventCat(getEventCategory(rs.getInt("requestedeventcat_catid")));
-        
-        ev.setRequestActionByDefaultMuniCEO(rs.getBoolean("directrequesttodefaultmuniceo"));
-        
-        if(rs.getInt("actionrequestedby_userid")!=0){
-            ev.setActionRequestedBy(ui.getUser(rs.getInt("actionrequestedby_userid")));
-        }
-        if(rs.getInt("responderintended_userid")!=0){
-            ev.setResponderIntended(ui.getUser(rs.getInt("responderintended_userid")));
-        }
-        
-        Timestamp ts = rs.getTimestamp("responsetimestamp");
-        
-        if (ts != null) {
-            ev.setResponderActual(ui.getUser(rs.getInt("responderactual_userid")));
-            ev.setResponseTimestamp(rs.getTimestamp("responsetimestamp").toInstant()
-                    .atZone(ZoneId.systemDefault()).toLocalDateTime());
-            ev.setResponderNotes(rs.getString("respondernotes"));
-            ev.setRequestRejected(rs.getBoolean("rejeecteventrequest"));
-            int responseEventID = rs.getInt("responseevent_eventid");
-            if(responseEventID != 0){
-                ev.setResponseEvent(getEventCECase(responseEventID));
-            }
-        } 
-
         
         return ev;
     }
@@ -662,18 +587,213 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
     }
     
     
+   
+    
     /**
-     * Looks up and retrieves the event which lists the inputted event as its
-     * response event: this is only applicable for events that require an action response
+     * Builds an EventProposal object from the eventproposal table in the DB.
+     * An EventProposal contains up to three EventCategory objects which the user 
+     * can select to create next in their case management workflow
+     * @param proposalID
+     * @return all fields populated
+     * @throws IntegrationException 
+     */
+    public EventProposal getEventProposal(int proposalID) throws IntegrationException{
+
+        EventProposal proposal = new EventProposal();
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(      "SELECT proposalid, title, overalldescription, creator_userid, choice1eventcat_catid, \n" +
+                        "       choice1description, choice2eventcat_catid, choice2description, \n" +
+                        "       choice3eventcat_catid, choice3description, directproposaltodefaultmuniceo, \n" +
+                        "       directproposaltodefaultmunistaffer, directproposaltodeveloper, \n" +
+                        "       activatesxdaysfromgenevent, expiresxdaysfromgenevent, expirytrigger_eventcatid, \n" +
+                        "       active\n" +
+                        "  FROM public.ceeventproposal WHERE proposalid = ?;");
+        Connection con = getPostgresCon();
+        ResultSet rs = null;
+        PreparedStatement stmt = null;
+
+        try {
+
+            stmt = con.prepareStatement(sb.toString());
+            stmt.setInt(1, proposalID);
+            rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                proposal = generateEventProposal(rs);
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Cannot retrive EventProposal", ex);
+
+        } finally {
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+            if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        } // close finally
+
+        return proposal;
+        
+        
+    }
+    
+    /**
+     * Site of EventPropsal instantiation.
+     * Populates fields of EventProposals given a ResultSet returned from a DB query
+     * 
+     * @param rs
+     * @return
+     * @throws SQLException
+     * @throws IntegrationException 
+     */
+    private EventProposal generateEventProposal(ResultSet rs) throws SQLException, IntegrationException{
+        EventProposal proposal = new EventProposal();
+        
+        proposal.setProposalID(rs.getInt("proposalid"));
+        proposal.setTitle(rs.getString("title"));
+        proposal.setDescription(rs.getString("overalldescription"));
+        
+        proposal.setChoice1EventCat(getEventCategory(rs.getInt("choice1eventcat_catid")));
+        proposal.setChoice1Description(rs.getString("choice1description"));
+        proposal.setChoice2EventCat(getEventCategory(rs.getInt("choice2eventcat_catid")));
+        proposal.setChoice1Description(rs.getString("choice2description"));
+        proposal.setChoice3EventCat(getEventCategory(rs.getInt("choice3eventcat_catid")));
+        proposal.setChoice1Description(rs.getString("choice3description"));
+        
+        proposal.setDirectPropToDefaultMuniCEO(rs.getBoolean("directproposaltodefaultmuniceo"));
+        proposal.setDirectPropToDefaultMuniStaffer(rs.getBoolean("directproposaltodefaultmunistaffer"));
+        proposal.setDirectPropToDeveloper(rs.getBoolean("directproposaltodeveloper"));
+        
+        proposal.setActivatesXDaysFromGeneratingEvent(rs.getInt("activatesxdaysfromgenevent"));
+        proposal.setExpiresXDaysFromGeneratingEvent(rs.getInt("expiresxdaysfromgenevent"));
+        proposal.setExpiryTrigger(getEventCategory(rs.getInt("expirytrigger_eventcatid")));
+        
+        proposal.setActive(rs.getBoolean("active"));
+        
+        return proposal;
+    }
+    
+    public void insertEventProposal(EventProposal prop) throws IntegrationException{
+         String query = "INSERT INTO public.ceeventproposal(\n" +
+                        "            proposalid, title, overalldescription, creator_userid, choice1eventcat_catid, \n" +
+                        "            choice1description, choice2eventcat_catid, choice2description, \n" +
+                        "            choice3eventcat_catid, choice3description, directproposaltodefaultmuniceo, \n" +
+                        "            directproposaltodefaultmunistaffer, directproposaltodeveloper, \n" +
+                        "            activatesxdaysfromgenevent, expiresxdaysfromgenevent, expirytrigger_eventcatid, \n" +
+                        "            active)\n" +
+                        "    VALUES (DEFAULT, ?, ?, ?, ?, \n" +
+                        "            ?, ?, ?, \n" +
+                        "            ?, ?, ?, \n" +
+                        "            ?, ?, \n" +
+                        "            ?, ?, ?, \n" +
+                        "            ?);";
+
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+
+        try {
+            stmt = con.prepareStatement(query);
+            stmt.setString(1, prop.getTitle());
+            stmt.setString(2, prop.getDescription());
+            stmt.setInt(3, prop.getCreator().getUserID());
+            stmt.setInt(4, prop.getChoice1EventCat().getCategoryID());
+            
+            stmt.setString(5, prop.getChoice1Description());
+            stmt.setInt(6, prop.getChoice2EventCat().getCategoryID());
+            stmt.setString(7, prop.getChoice2Description());
+            
+            stmt.setInt(8, prop.getChoice3EventCat().getCategoryID());
+            stmt.setString(9, prop.getChoice3Description());
+            stmt.setBoolean(10, prop.isDirectPropToDefaultMuniCEO());
+            
+            stmt.setBoolean(11, prop.isDirectPropToDefaultMuniStaffer());
+            stmt.setBoolean(12, prop.isDirectPropToDeveloper());
+            
+            stmt.setInt(13, prop.getActivatesXDaysFromGeneratingEvent());
+            stmt.setInt(14, prop.getExpiresXDaysFromGeneratingEvent());
+            stmt.setInt(15, prop.getExpiryTrigger().getCategoryID());
+            
+            stmt.setBoolean(16, prop.isActive());
+
+            stmt.execute();
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Unable to insert EventProposal", ex);
+
+        } finally {
+             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+        } // close finally
+        
+    }
+    
+    public void updateEventProposal(EventProposal prop) throws IntegrationException{
+         String query = "   UPDATE public.ceeventproposal\n" +
+                        "   SET title=?, overalldescription=?, creator_userid=?, \n" +
+                        "       choice1eventcat_catid=?, choice1description=?, choice2eventcat_catid=?, \n" +
+                        "       choice2description=?, choice3eventcat_catid=?, choice3description=?, \n" +
+                        "       directproposaltodefaultmuniceo=?, directproposaltodefaultmunistaffer=?, \n" +
+                        "       directproposaltodeveloper=?, activatesxdaysfromgenevent=?, expiresxdaysfromgenevent=?, \n" +
+                        "       expirytrigger_eventcatid=?, active=?\n" +
+                        " WHERE proposalid = ?;";
+
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+
+        try {
+            stmt = con.prepareStatement(query);
+            stmt.setString(1, prop.getTitle());
+            stmt.setString(2, prop.getDescription());
+            stmt.setInt(3, prop.getCreator().getUserID());
+            stmt.setInt(4, prop.getChoice1EventCat().getCategoryID());
+            
+            stmt.setString(5, prop.getChoice1Description());
+            stmt.setInt(6, prop.getChoice2EventCat().getCategoryID());
+            stmt.setString(7, prop.getChoice2Description());
+            
+            stmt.setInt(8, prop.getChoice3EventCat().getCategoryID());
+            stmt.setString(9, prop.getChoice3Description());
+            stmt.setBoolean(10, prop.isDirectPropToDefaultMuniCEO());
+            
+            stmt.setBoolean(11, prop.isDirectPropToDefaultMuniStaffer());
+            stmt.setBoolean(12, prop.isDirectPropToDeveloper());
+            
+            stmt.setInt(13, prop.getActivatesXDaysFromGeneratingEvent());
+            stmt.setInt(14, prop.getExpiresXDaysFromGeneratingEvent());
+            stmt.setInt(15, prop.getExpiryTrigger().getCategoryID());
+            
+            stmt.setBoolean(16, prop.isActive());
+            stmt.setInt(17, prop.getProposalID());
+
+            stmt.execute();
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Unable to insert EventProposal", ex);
+
+        } finally {
+             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+        } // close finally
+        
+    }
+    
+     /**
+     * 
      * @param event for which we will search for a creation trigger 
      * @return the Event that lists the incoming event as its response
      * @throws IntegrationException 
      */
-    public Event getActionTriggeringEvent(Event event) throws IntegrationException{
-        Event ev = null;
+    public EventProposalImplementation getProposalImplAssociatedWithEvent(Event event) throws IntegrationException{
+        EventProposalImplementation propImp = null;
 
         StringBuilder sb = new StringBuilder();
-        sb.append("SELECT eventid from ceevent WHERE responseevent_eventid = ?");
+        sb.append("SELECT implementationid "
+                + "FROM ceeventproposalimplementation "
+                + "INNER JOIN ceevent ON generatingevent_eventid = eventid "
+                + "WHERE eventid = ?");
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
@@ -685,7 +805,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             rs = stmt.executeQuery();
 
             while (rs.next()) {
-                ev = getEventCECase(rs.getInt("eventid"));
+                propImp = getEventProposalImplementation(rs.getInt("implementationid"));
             }
 
         } catch (SQLException ex) {
@@ -698,8 +818,232 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
         } // close finally
 
-        return ev;
+        return propImp;
     }
+    
+    public void insertEventProposalImplementation(EventProposalImplementation imp) throws MalformedBOBException, IntegrationException{
+        String query = "INSERT INTO public.ceeventproposalimplementation(\n" +
+                        "            implementationid, proposal_propid, generatingevent_eventid, initiator_userid, \n" +
+                        "            responderintended_userid, activateson, expireson, responderactual_userid, \n" +
+                        "            rejectproposal, responsetimestamp, responseevent_eventid, expiredorinactive, \n" +
+                        "            notes)\n" +
+                        "    VALUES (DEFAULT, ?, ?, ?, \n" +
+                        "            ?, ?, ?, ?, \n" +
+                        "            ?, ?, ?, ?, \n" +
+                        "            ?);";
+
+        
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+
+        try {
+            stmt = con.prepareStatement(query);
+            stmt.setInt(1, imp.getProposalID());
+            stmt.setInt(2, imp.getGeneratingEventID());
+            
+            if(imp.getInitiator() != null){
+                stmt.setInt(3, imp.getInitiator().getUserID());
+            } else { 
+                throw new MalformedBOBException("EventProposalImplementations must contain a User object as an initiator");
+            }
+            
+            if(imp.getResponderIntended()!= null){
+                stmt.setInt(4, imp.getResponderIntended().getUserID());
+            } else {
+                stmt.setNull(4, java.sql.Types.NULL);
+            }
+            
+            stmt.setTimestamp(5, java.sql.Timestamp.valueOf(imp.getActivatesOn()));
+            stmt.setTimestamp(6, java.sql.Timestamp.valueOf(imp.getExpiresOn()));
+            
+            if(imp.getResponderActual() != null){
+                stmt.setInt(7, imp.getResponderActual().getUserID());
+            } else {
+                stmt.setNull(7, java.sql.Types.NULL);
+            }
+            
+            stmt.setBoolean(8, imp.isProposalRejected());
+            
+            if(imp.getResponseTimestamp() != null){
+                stmt.setTimestamp(9, java.sql.Timestamp.valueOf(imp.getResponseTimestamp()));
+            } else {
+                stmt.setNull(9, java.sql.Types.NULL);
+            }
+
+            stmt.setInt(10, imp.getResponseEventID());
+            stmt.setBoolean(11, imp.isExpiredorinactive());
+            stmt.setString(12, imp.getNotes());
+            
+            stmt.execute();
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Unable to insert EventProposal", ex);
+
+        } finally {
+             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+        } // close finally
+        
+    }
+    
+    /**
+     * Builds an EventProposalImplementation object given the PK of the DB record
+     * @param propImpID
+     * @return
+     * @throws IntegrationException 
+     */
+    public EventProposalImplementation getEventProposalImplementation(int propImpID) throws IntegrationException{
+         EventProposalImplementation response = new EventProposalImplementation();
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(  "SELECT implementationid, proposal_propid, generatingevent_eventid, initiator_userid, \n" +
+                    "       responderintended_userid, activateson, expireson, responderactual_userid, \n" +
+                    "       rejectproposal, responsetimestamp, responseevent_eventid, expiredorinactive, \n" +
+                    "       notes\n" +
+                    "  FROM public.ceeventproposalimplementation WHERE implementationid = ?;");
+        Connection con = getPostgresCon();
+        ResultSet rs = null;
+        PreparedStatement stmt = null;
+
+        try {
+
+            stmt = con.prepareStatement(sb.toString());
+            stmt.setInt(1, propImpID);
+            rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                response = generateEventProposalImplementation(rs);
+                
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Cannot retrive event proposal response", ex);
+
+        } finally {
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+            if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        } // close finally
+
+        return response;
+        
+    }
+    
+    private EventProposalImplementation generateEventProposalImplementation(ResultSet rs) throws SQLException, IntegrationException{
+        EventProposalImplementation propImp = new EventProposalImplementation();
+        UserIntegrator ui = getUserIntegrator();
+        
+        propImp.setImplementationID(rs.getInt("implementationid"));
+        propImp.setProposalID(rs.getInt("proposal_propid"));
+        
+        propImp.setInitiator(ui.getUser(rs.getInt("initiator")));
+        propImp.setResponderIntended(ui.getUser(rs.getInt("responderintended_userid")));
+        propImp.setResponderActual(ui.getUser(rs.getInt("responder_userid")));
+        
+        if(rs.getTimestamp("activateson") != null){
+            propImp.setActivatesOn(rs.getTimestamp("activateson").toLocalDateTime());
+        }
+        if(rs.getTimestamp("expireson") != null){
+            propImp.setExpiresOn(rs.getTimestamp("expireson").toLocalDateTime());
+        }
+        propImp.setResponseEventID(rs.getInt("responseevent_eventid"));
+        if(rs.getTimestamp("responsetimestamp") != null){
+            propImp.setResponseTimestamp(rs.getTimestamp("responsetimestamp").toLocalDateTime());
+        }
+        propImp.setProposalRejected(rs.getBoolean("rejectproposal"));
+        
+        propImp.setExpiredorinactive(rs.getBoolean("expiredorinactive"));
+        propImp.setNotes(rs.getString("notes"));
+        
+        return propImp;
+        
+    }
+    
+    public void updateProposalImplementationMetadata(EventProposalImplementation imp) throws IntegrationException{
+          String query =    "UPDATE public.ceeventproposalimplementation\n" +
+                            "   SET proposal_propid=?, generatingevent_eventid=?, \n" +
+                            "       initiator_userid=?, responderintended_userid=?, activateson=?, \n" +
+                            "       expireson=?, expiredorinactive=?, notes=?\n" +
+                            " WHERE implementationid=?;";
+
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+
+        try {
+            stmt = con.prepareStatement(query);
+            stmt.setInt(1, imp.getProposalID());
+            stmt.setInt(2, imp.getGeneratingEventID());
+            stmt.setInt(3, imp.getInitiator().getUserID());
+            stmt.setInt(4, imp.getResponderIntended().getUserID());
+            
+            if(imp.getActivatesOn() != null){
+                stmt.setTimestamp(5, java.sql.Timestamp.valueOf(imp.getActivatesOn()));
+            } else {
+                stmt.setNull(5, java.sql.Types.NULL);
+            }
+            
+            if(imp.getExpiresOn() != null){
+                stmt.setTimestamp(6, java.sql.Timestamp.valueOf(imp.getExpiresOn()));
+            } else {
+                stmt.setNull(6, java.sql.Types.NULL);
+            }
+            
+            stmt.setString(7, imp.getNotes());
+            stmt.executeUpdate();
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Cannot udpate event proposal implementation, sorry", ex);
+
+        } finally {
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+        }
+        
+        
+    }
+    
+    public void logResponseToProposal(CECaseEvent ev) throws IntegrationException {
+
+       String query = "UPDATE public.ceeventproposalimplementation\n" +
+                        "   SET responderactual_userid=?, rejectproposal=?, responsetimestamp=?, \n" +
+                        "       responseevent_eventid=?, notes=?\n" +
+                        " WHERE implementationid = ?;";
+
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+        EventProposalImplementation imp;
+        
+        if(ev.getEventProposalImplementation()!= null){
+            imp = ev.getEventProposalImplementation();
+
+            try {
+
+                stmt = con.prepareStatement(query);
+                stmt.setInt(1, imp.getResponderActual().getUserID());
+                stmt.setBoolean(2, imp.isProposalRejected());
+                stmt.setTimestamp(3, java.sql.Timestamp.valueOf(imp.getResponseTimestamp()));
+                int responseEventID;
+                if(imp.getResponseEvent()!= null){
+                    responseEventID = imp.getResponseEvent().getEventID();
+                    stmt.setInt(4, responseEventID);
+                } else {
+                    stmt.setNull(4, java.sql.Types.NULL);
+                }
+                stmt.setString(5, imp.getNotes());
+                stmt.executeUpdate();
+            } catch (SQLException ex) {
+                System.out.println(ex.toString());
+                throw new IntegrationException("Cannot udpate event proposal implementation, sorry", ex);
+
+            } finally {
+                if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+                if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+            }
+        }
+    }
+    
     
     /**
      * Convenience method for extracting the case-dependent events from their
@@ -712,9 +1056,9 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
      * @return
      * @throws IntegrationException 
      */
-    public List<EventCECase> queryCaseDependentEvents(SearchParamsEventCECase params) throws IntegrationException, CaseLifecyleException{
+    public List<CECaseEvent> queryCaseDependentEvents(SearchParamsEventCECase params) throws IntegrationException, CaseLifecyleException{
         List<EventCECaseCasePropBundle> wrappedEventList = getEventsCECase(params);
-        List<EventCECase> depList = new ArrayList<>();
+        List<CECaseEvent> depList = new ArrayList<>();
         for(EventCECaseCasePropBundle ec: wrappedEventList){
             depList.add(ec.getEvent());
         }
@@ -744,7 +1088,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
 
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT ceevent.eventid ");
-        sb.append("FROM ceevent INNER JOIN ceeventcategory ON (ceeventcategory_catid = categoryid) ");
+        sb.append("FROM ceevent INNER JOIN eventcategory ON (ceeventcategory_catid = categoryid) ");
         sb.append("INNER JOIN cecase ON (cecase_caseid = caseid) ");
         sb.append("INNER JOIN property ON (property_propertyid = propertyid) ");
         sb.append("WHERE ");
@@ -784,7 +1128,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
                     &&
                 !params.isFilterByRequestedResponseEventCat()) {
                 if(notFirstCriteria){sb.append("AND ");} else {notFirstCriteria = true;}
-                sb.append("ceeventcategory_catid = ? ");
+                sb.append("eventcategory_catid = ? ");
             }
 
 
@@ -985,8 +1329,8 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         String query = "SELECT ceevent.eventid, ceevent.ceeventcategory_catid, ceevent.dateofrecord, \n"
                 + "       ceevent.eventtimestamp, ceevent.eventdescription, ceevent.owner_userid, ceevent.disclosetomunicipality, \n"
                 + "       ceevent.disclosetopublic, ceevent.activeevent, ceevent.requestsAction, ceevent.hidden, \n"
-                + "       ceevent.notes, ceevent.viewconfirmedby, ceevent.viewconfirmedat, cecase.caseid, ceeventcategory.categoryid\n"
-                + " FROM ceevent 	INNER JOIN ceeventcategory ON (ceeventcategory_catid = categoryid)\n"
+                + "       ceevent.notes, ceevent.viewconfirmedby, ceevent.viewconfirmedat, cecase.caseid, eventcategory.categoryid\n"
+                + " FROM ceevent 	INNER JOIN eventcategory ON (ceeventcategory_catid = categoryid)\n"
                 + "		INNER JOIN cecase ON (cecase_caseid = caseid)\n"
                 + " WHERE categorytype = CAST ('Timeline' AS ceeventtype)\n"
                 + "		AND dateofrecord >= ? AND dateofrecord <= ? \n"
@@ -1014,7 +1358,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
             System.out.println("EventIntegrator.getUpcomingTimelineEvents | rs size: " + rs.getFetchSize());
 
             while (rs.next()) {
-                EventCECase ev = new EventCECase();
+                CECaseEvent ev = new CECaseEvent();
 
                 ev.setEventID(rs.getInt("eventid"));
                 ev.setCategory(getEventCategory(rs.getInt("categoryid")));
@@ -1033,12 +1377,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
                 ev.setActive(rs.getBoolean("activeevent"));
 
                 Timestamp ldt = rs.getTimestamp("viewconfirmedat");
-                if (ldt != null) {
-                    ev.setResponderActual(ui.getUser(rs.getInt("viewconfirmedby")));
-                    ev.setResponseTimestamp(rs.getTimestamp("viewconfirmedat").toInstant()
-                            .atZone(ZoneId.systemDefault()).toLocalDateTime());
-                    
-                }
+                // removed action requests
                 ev.setHidden(rs.getBoolean("hidden"));
                 ev.setNotes(rs.getString("notes"));
 
@@ -1065,7 +1404,7 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
    
     
     
-    public void clearResponseToActionRequest(EventCECase ec) throws IntegrationException{
+    public void clearResponseToActionRequest(CECaseEvent ec) throws IntegrationException{
          String query = "UPDATE public.ceevent\n" +
             "   SET responsetimestamp=NULL, respondernotes=NULL, \n" +
             "       responseevent_eventid=NULL, rejeecteventrequest=FALSE, "
@@ -1093,50 +1432,14 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         
     }
     
-    public void logResponseToActionRequest(EventCECase ev) throws IntegrationException {
+  
 
-       String query = "UPDATE public.ceevent\n" +
-            "   SET responsetimestamp=now(), respondernotes=?, \n" +
-            "       rejeecteventrequest=?, responseevent_eventid=?, "
-                + "responderactual_userid=? WHERE eventid = ?;";
-
-        Connection con = getPostgresCon();
-        PreparedStatement stmt = null;
-
-        try {
-
-            stmt = con.prepareStatement(query);
-            stmt.setString(1, ev.getResponderNotes());
-            stmt.setBoolean(2, ev.isRequestRejected());
-            int responseEventID;
-            if(ev.getResponseEvent() != null){
-                responseEventID = ev.getResponseEvent().getEventID();
-                stmt.setInt(3, responseEventID);
-            } else {
-                stmt.setNull(3, java.sql.Types.NULL);
-            }
-            stmt.setInt(4, ev.getResponderActual().getUserID());
-            stmt.setInt(5, ev.getEventID());
-            stmt.executeUpdate();
-        } catch (SQLException ex) {
-            System.out.println(ex.toString());
-            throw new IntegrationException("Cannot udpate event with view details, sorry", ex);
-
-        } finally {
-            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
-            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
-        }
-    }
-
-    public EventCECase getEventCECase(int eventID) throws IntegrationException {
-        EventCECase ev = null;
+    public CECaseEvent getEventCECase(int eventID) throws IntegrationException {
+        CECaseEvent ev = null;
 
         String query = "SELECT eventid, ceeventcategory_catid, cecase_caseid, dateofrecord, \n" +
                 "       eventtimestamp, eventdescription, owner_userid, disclosetomunicipality, \n" +
-                "       disclosetopublic, activeevent, hidden, ceevent.notes, responsetimestamp, \n" +
-                "       actionrequestedby_userid, respondernotes, responderintended_userid, \n" +
-                "       requestedeventcat_catid, responseevent_eventid, rejeecteventrequest, \n" +
-                "       responderactual_userid, directrequesttodefaultmuniceo, property_propertyid,  municipality_municode " +
+                "       disclosetopublic, activeevent, hidden, ceevent.notes, property_propertyid,  municipality_municode " +
                 "       FROM public.ceevent INNER JOIN public.cecase ON (cecase_caseid = caseid)\n" +
                 "                           INNER JOIN public.property on (property_propertyid = propertyid) " +
                 "       WHERE eventid = ?;";
@@ -1168,8 +1471,8 @@ public class EventIntegrator extends BackingBeanUtils implements Serializable {
         return ev;    
     }
 
-    public List<EventCECase> getEventsByCaseID(int caseID) throws IntegrationException {
-        List<EventCECase> eventList = new ArrayList();
+    public List<CECaseEvent> getEventsByCaseID(int caseID) throws IntegrationException {
+        List<CECaseEvent> eventList = new ArrayList();
 
         String query = "SELECT eventid FROM public.ceevent WHERE cecase_caseid = ?;";
         Connection con = getPostgresCon();

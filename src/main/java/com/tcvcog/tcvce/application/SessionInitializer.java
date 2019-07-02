@@ -156,6 +156,7 @@ public class SessionInitializer extends BackingBeanUtils implements Serializable
         
         Property p = propI.getProperty(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
                 .getString("arbitraryPlaceholderPropertyID")));
+        
         sessionBean.setActiveProp(p);
 
         sessionBean.setActivePerson(persInt.getPerson(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
@@ -165,7 +166,7 @@ public class SessionInitializer extends BackingBeanUtils implements Serializable
         
         CECase c = caseInt.getCECase(Integer.parseInt(getResourceBundle(Constants.DB_FIXED_VALUE_BUNDLE)
                 .getString("arbitraryPlaceholderCaseID")));
-        sessionBean.setcECase(c);
+        sessionBean.setSessionCECase(c);
         
 //        sessionBean.setcECaseQueue(new ArrayList<CECase>());
 //        sessionBean.getcECaseQueue().add(c);

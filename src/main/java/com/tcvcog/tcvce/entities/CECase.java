@@ -7,6 +7,7 @@ package com.tcvcog.tcvce.entities;
 
 import com.tcvcog.tcvce.integration.EventIntegrator;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -19,13 +20,14 @@ public class CECase extends CECaseBaseClass implements Cloneable{
     private List<CodeViolation> violationListResolved;
     private List<CodeViolation> violationListUnresolved;
     
-    private List<EventCECase> visibleEventList;
+    private List<CECaseEvent> visibleEventList;
+    private List<CECaseEvent> activeEventList;
     private boolean showHiddenEvents;
     private boolean showInactiveEvents;
-    private List<EventCECase> completeEventList;
+    private List<CECaseEvent> completeEventList;
     
     
-    private List<EventCECase> eventListActionRequests;
+    private List<CECaseEvent> eventProposalList;
     private List<Citation> citationList;
     private List<NoticeOfViolation> noticeList;
     private List<CEActionRequest> ceActionRequestList;
@@ -92,9 +94,9 @@ public class CECase extends CECaseBaseClass implements Cloneable{
      * flags, add the event from the complete list to the visible list
      * @return the visibleEventList
      */
-    public List<EventCECase> getVisibleEventList() {
+    public List<CECaseEvent> getVisibleEventList() {
         visibleEventList.clear();
-        for (EventCECase ev : completeEventList) {
+        for (CECaseEvent ev : completeEventList) {
             if (!ev.isActive() && !showInactiveEvents) {
                 continue;
             }
@@ -109,7 +111,7 @@ public class CECase extends CECaseBaseClass implements Cloneable{
     /**
      * @param visibleEventList the visibleEventList to set
      */
-    public void setVisibleEventList(List<EventCECase> visibleEventList) {
+    public void setVisibleEventList(List<CECaseEvent> visibleEventList) {
         this.visibleEventList = visibleEventList;
     }
 
@@ -156,33 +158,34 @@ public class CECase extends CECaseBaseClass implements Cloneable{
     }
 
     /**
-     * @return the eventListActionRequests
+     * @return the eventProposalList
      */
-    public List<EventCECase> getEventListActionRequests() {
+    public List<CECaseEvent> getEventProposalList() {
 
-//        if(completeEventList !=  null && completeEventList.size() >= 1){
-//            for(EventCECase ev: completeEventList){
-//                if(ev.getRequestedEventCat()!= null 
-//                        && 
-//                    !ev.isResponseComplete()
-//                        &&
-//                    ev.isActive()
-//                        &&
-//                    !ev.isHidden()){
-//                    // event is a case action request so add it!
-//                    eventListActionRequests.add(ev);
-//                }
-//            }
-//        }
+        eventProposalList = new ArrayList<>();
+        if(completeEventList !=  null && completeEventList.size() >= 1){
+            for(CECaseEvent ev: completeEventList){
+                if(ev.getEventProposalImplementation()!= null 
+                        && 
+                    ev.getEventProposalImplementation().getResponseTimestamp() != null
+                        &&
+                    ev.isActive()
+                        &&
+                    !ev.isHidden()){
+                    // event is a case action request so add it!
+                    eventProposalList.add(ev);
+                }
+            }
+        }
         
-        return eventListActionRequests;
+        return eventProposalList;
     }
 
     /**
-     * @param eventListActionRequests the eventListActionRequests to set
+     * @param eventProposalList the eventProposalList to set
      */
-    public void setEventListActionRequests(List<EventCECase> eventListActionRequests) {
-        this.eventListActionRequests = eventListActionRequests;
+    public void setEventProposalList(List<CECaseEvent> eventProposalList) {
+        this.eventProposalList = eventProposalList;
     }
 
     /**
@@ -236,14 +239,14 @@ public class CECase extends CECaseBaseClass implements Cloneable{
     /**
      * @return the completeEventList
      */
-    public List<EventCECase> getCompleteEventList() {
+    public List<CECaseEvent> getCompleteEventList() {
         return completeEventList;
     }
 
     /**
      * @param completeEventList the completeEventList to set
      */
-    public void setCompleteEventList(List<EventCECase> completeEventList) {
+    public void setCompleteEventList(List<CECaseEvent> completeEventList) {
         this.completeEventList = completeEventList;
     }
 
@@ -273,6 +276,29 @@ public class CECase extends CECaseBaseClass implements Cloneable{
      */
     public void setShowHiddenEvents(boolean showHiddenEvents) {
         this.showHiddenEvents = showHiddenEvents;
+    }
+
+    /**
+     * @return the activeEventList
+     */
+    public List<CECaseEvent> getActiveEventList() {
+        if(completeEventList != null){
+            Iterator<CECaseEvent> iter = completeEventList.iterator();
+                while(iter.hasNext()){
+                    CECaseEvent ev = iter.next();
+                    if(ev.isActive()){
+                        activeEventList.add(ev);
+                    }
+                }
+            }
+        return activeEventList;
+    }
+
+    /**
+     * @param activeEventList the activeEventList to set
+     */
+    public void setActiveEventList(List<CECaseEvent> activeEventList) {
+        this.activeEventList = activeEventList;
     }
 
   

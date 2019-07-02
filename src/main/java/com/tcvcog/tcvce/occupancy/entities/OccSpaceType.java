@@ -17,13 +17,14 @@
 package com.tcvcog.tcvce.occupancy.entities;
 
 /**
- *
+ * Mapped to fields of the spacetype table
  * @author EC Darsow
  */
-public class SpaceType {
+public class OccSpaceType {
     private int spaceTypeID;
     private String spaceTypeTitle;
     private String spaceTypeDescription;
+    private boolean required;
 
     /**
      * @return the spaceTypeID
@@ -65,6 +66,20 @@ public class SpaceType {
      */
     public void setSpaceTypeDescription(String spaceTypeDescription) {
         this.spaceTypeDescription = spaceTypeDescription;
+    }
+
+    /**
+     * @return the required
+     */
+    public boolean isRequired() {
+        return required;
+    }
+
+    /**
+     * @param required the required to set
+     */
+    public void setRequired(boolean required) {
+        this.required = required;
     }
     
 }

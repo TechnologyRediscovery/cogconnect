@@ -23,7 +23,7 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.CodeViolation;
 import com.tcvcog.tcvce.entities.CodeViolationDisplayable;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.NoticeOfViolation;
 import com.tcvcog.tcvce.entities.TextBlock;
 import com.tcvcog.tcvce.entities.Municipality;
@@ -749,6 +749,7 @@ public class ViolationIntegrator extends BackingBeanUtils implements Serializabl
         }
         
         v.setComplianceTimeframeEventID(rs.getInt("compliancetfevent"));
+        loadViolationPhotoList(v);
         
         v.setCitationIDList(citInt.getCitations(v.getViolationID()));
         cc.configureCodeViolation(v);
@@ -825,7 +826,7 @@ public class ViolationIntegrator extends BackingBeanUtils implements Serializabl
         return getCodeViolations(c.getCaseID());
     }
     
-    public void loadViolationPhotoList(CodeViolation cv) throws IntegrationException{
+    public CodeViolation loadViolationPhotoList(CodeViolation cv) throws IntegrationException{
         ArrayList<Integer> photoList = new ArrayList<>();
         
         String query = "SELECT photodoc_photodocid FROM public.codeviolationphotodoc WHERE codeviolation_violationid = ?";
@@ -853,6 +854,8 @@ public class ViolationIntegrator extends BackingBeanUtils implements Serializabl
              if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
              if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
         } // close finally
+        
+        return cv;
     }
     
     

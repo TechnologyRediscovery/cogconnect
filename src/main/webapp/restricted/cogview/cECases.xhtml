@@ -390,6 +390,14 @@
                                                    oncomplete="PF('report-caselist-profile-diaglog-var').show()"
                                                    value="generate case list report" 
                                                    update="report-caselist-profile-form"/>
+                                
+                                
+                                
+                                <p:chart type="donut" rendered="false"
+                                             model="#{caseProfileBB.violationDonut}" 
+                                             style="width:500px; height: 600px;"/>
+
+
                             </h:form>
                         </div>
                         <div class="object-column">
@@ -424,7 +432,7 @@
                                                         value="view property profile" />
 
                                     <p>
-                                        <a href="#action-requests">next actions <h:outputText value=" (#{caseProfileBB.currentCase.eventListActionRequests.size()})" /> </a> | 
+                                        <a href="#action-requests">next actions <h:outputText value=" (#{caseProfileBB.currentCase.eventProposalList.size()})" /> </a> | 
                                         <a href="#add-event">new event</a> | 
                                         <a href="#event-history">event history <h:outputText value=" (#{caseProfileBB.currentCase.visibleEventList.size()})" /></a> | 
                                         <a href="#violations">violations <h:outputText value=" (#{caseProfileBB.currentCase.violationList.size()})" /></a> | 
@@ -584,11 +592,11 @@
                                     </p:column>
 
 
-                                    <p:column width="6%" sortBy="#{v.statusString}">
+                                    <p:column width="6%" sortBy="#{v.status.label}">
                                         <f:facet name="header">
                                             <h:outputText value="Status" />
                                         </f:facet>
-                                        <h:outputText id="violation-status-ot" value="#{v.statusString}"/>
+                                        <h:outputText id="violation-status-ot" value="#{v.status.label}"/>
                                     </p:column>
 
                                     <p:column width="12%">
@@ -701,12 +709,11 @@
 
 
                             <h:form id="events-datascroller-form">
-                                <ui:remove>
 
                                     <p:dataScroller
                                         id="events-datascroller"
                                         var="e"
-                                        value="#{caseProfileBB.currentCase.eventListActionRequests}"
+                                        value="#{caseProfileBB.currentCase.eventProposalList}"
                                         widgetVar="events-requiredactions-ds">
 
                                         <div class="outlinedBox event-ds-box">
@@ -803,7 +810,6 @@
                                         </div>
 
                                     </p:dataScroller>
-                                </ui:remove>
 
                             </h:form>
 
@@ -1159,9 +1165,14 @@
                                                  action="#{caseProfileBB.createNewNotice}"
                                                  value="Create new notice of violation letter"
                                                  rendered="#{sessionBean.facesUser.keyCard.hasEnfOfficialPermissions}"
-                                                 disabled="#{!(empty caseProfileBB.currentCase.closingDate)}"/>
+                                                 disabled="false"
+                                                 />
                                 <p:spacer height="5px"/>
 
+                                <ui:remove>
+                                    disabled="#{!(empty caseProfileBB.currentCase.closingDate)}"
+                                </ui:remove>
+                                
                                 <p:dataScroller
                                     id="notices-ds"
                                     value="#{caseProfileBB.currentCase.noticeList}"
@@ -1404,7 +1415,7 @@
                                                 <h:outputText id="v-source-sep-compactlist-ot" value=" "/>
                                                 <h:outputText id="v-source-year-compactlist-ot" value="#{v.violatedEnfElement.codeElement.source.sourceYear})"/>
                                                 <h:outputText id="sep-compactlist-line-ot" value=" | "/>
-                                                <h:outputText id="status-compactlist-line-ot" value="#{v.statusString}"/>
+                                                <h:outputText id="status-compactlist-line-ot" value="#{v.status.label}"/>
 
                                             </p:dataScroller>
 
@@ -1593,7 +1604,7 @@
                                     </p:rowExpansion>
                                 </p:dataTable>
 
-                                <p:chart type="donut" model="#{reportingBB.violationDonut}" style="width:600px; height:600px"/>
+                                <p:chart type="donut" model="#{dataCoordinator.generateModelViolationDonut(caseProfileBB.currentCase)}" style="width:600px; height:600px"/>
 
                             </h:form>
 
@@ -1701,52 +1712,54 @@
 
 
                                 <h:panelGroup>
-                                    <h:outputLabel for="request-action-cb">
-                                        <h:outputText value="Request an action with this event"/>
-                                    </h:outputLabel>
+                                    <ui:remove>
+                                        <h:outputLabel for="request-action-cb">
+                                            <h:outputText value="Request an action with this event"/>
+                                        </h:outputLabel>
 
-                                    <p:spacer height="5px"/>
+                                        <p:spacer height="5px"/>
 
-                                    <p:selectBooleanCheckbox tabindex="18" id="eventedit-requestaction-action-cb" 
-                                                             value="#{caseProfileBB.includeActionRequest}"
-                                                             disabled="#{caseProfileBB.selectedEvent.responseComplete or !(empty caseProfileBB.triggeringEventForRequestedCaseAction)}">
-                                        <p:ajax update="event-responder-intended
-                                                requested-action-solb
-                                                request-action-usedefceo-cb" />
-                                    </p:selectBooleanCheckbox>
+                                        <p:selectBooleanCheckbox tabindex="18" id="eventedit-requestaction-action-cb" 
+                                                                 value="#{caseProfileBB.includeActionRequest}"
+                                                                 disabled="#{caseProfileBB.selectedEvent.responseComplete or !(empty caseProfileBB.triggeringEventForProposal)}">
+                                            <p:ajax update="event-responder-intended
+                                                    requested-action-solb
+                                                    request-action-usedefceo-cb" />
+                                        </p:selectBooleanCheckbox>
 
-                                    <p:spacer height="5px"/>
+                                        <p:spacer height="5px"/>
 
-                                    <h:outputText id="eventedit-explain-no-action-request-ot"
-                                                  rendered="#{!(empty caseProfileBB.triggeringEventForRequestedCaseAction)}"
-                                                  value="This event is already a response to event id #{caseProfileBB.triggeringEventForRequestedCaseAction.eventID}"/>
+                                        <h:outputText id="eventedit-explain-no-action-request-ot"
+                                                      rendered="#{!(empty caseProfileBB.triggeringEventForProposal)}"
+                                                      value="This event is already a response to event id #{caseProfileBB.triggeringEventForProposal.eventID}"/>
 
-                                    <h:outputText id="eventedit-actionresponse-status-ot"
-                                                  rendered="#{caseProfileBB.selectedEvent.requestsAction}"
-                                                  value="#{caseProfileBB.selectedEvent.responseComplete ? 'action response complete' : 'still awating action by'}" />
-                                    <p:spacer height="5px"/>
-                                    <h:outputText   id="eventedit-actionresponse-responsedetails-ot"
-                                                    rendered="#{caseProfileBB.selectedEvent.responseComplete and caseProfileBB.selectedEvent.requestsAction}" 
-                                                    value="Action taken by #{caseProfileBB.selectedEvent.responderActual.person.firstName} 
-                                                    #{caseProfileBB.selectedEvent.responderActual.person.lastName}
-                                                    on #{caseProfileBB.selectedEvent.responseTimePrettyDate}"
-                                                    />
-                                    <p:spacer height="5px"/>
-                                    <p:commandButton id="clear-action-response-cb"
-                                                     ajax="true"
-                                                     rendered="#{!caseProfileBB.allowedToClearActionResponse}"
-                                                     disabled="#{!caseProfileBB.selectedEvent.responseComplete}"
-                                                     actionListener="#{caseProfileBB.clearActionResponse}"
-                                                     value="clear action response"
-                                                     oncomplete="PF('add-event-dialog-var').hide()"
-                                                     icon="fa fa-eraser"
-                                                     update="
-                                                     event-dt-form
-                                                     events-datascroller-form
-                                                     "
-                                                     />
+                                        <h:outputText id="eventedit-actionresponse-status-ot"
+                                                      rendered="#{caseProfileBB.selectedEvent.requestsAction}"
+                                                      value="#{caseProfileBB.selectedEvent.responseComplete ? 'action response complete' : 'still awating action by'}" />
+                                        <p:spacer height="5px"/>
+                                        <h:outputText   id="eventedit-actionresponse-responsedetails-ot"
+                                                        rendered="#{caseProfileBB.selectedEvent.responseComplete and caseProfileBB.selectedEvent.requestsAction}" 
+                                                        value="Action taken by #{caseProfileBB.selectedEvent.responderActual.person.firstName} 
+                                                        #{caseProfileBB.selectedEvent.responderActual.person.lastName}
+                                                        on #{caseProfileBB.selectedEvent.responseTimePrettyDate}"
+                                                        />
+                                        <p:spacer height="5px"/>
+                                        <p:commandButton id="clear-action-response-cb"
+                                                         ajax="true"
+                                                         rendered="#{!caseProfileBB.allowedToClearActionResponse}"
+                                                         disabled="#{!caseProfileBB.selectedEvent.responseComplete}"
+                                                         actionListener="#{caseProfileBB.clearActionResponse}"
+                                                         value="clear action response"
+                                                         oncomplete="PF('add-event-dialog-var').hide()"
+                                                         icon="fa fa-eraser"
+                                                         update="
+                                                         event-dt-form
+                                                         events-datascroller-form
+                                                         "
+                                                         />
 
 
+                                    </ui:remove>
                                 </h:panelGroup>
 
 
@@ -1761,7 +1774,7 @@
                                                      value="#{caseProfileBB.selectedEvent.requestedEventCat}" tabindex="19"
                                                      disabled="#{!caseProfileBB.includeActionRequest 
                                                                  or caseProfileBB.selectedEvent.responseComplete
-                                                                 or !(empty caseProfileBB.triggeringEventForRequestedCaseAction)}">
+                                                                 or !(empty caseProfileBB.triggeringEventForProposal)}">
                                         <f:converter converterId="eventCategoryConverter"/>
                                         <f:selectItems  id="catItemsList" value="#{caseProfileBB.availableActionsToRequest}" 
                                                         var="ec" itemValue="#{ec}" itemLabel="#{ec.eventType.label}: #{ec.eventCategoryTitle}"/>
@@ -1775,7 +1788,7 @@
                                                              value="#{caseProfileBB.selectedEvent.requestActionByDefaultMuniCEO}"
                                                              disabled="#{!caseProfileBB.includeActionRequest 
                                                                          or caseProfileBB.selectedEvent.responseComplete
-                                                                         or !(empty caseProfileBB.triggeringEventForRequestedCaseAction)}">
+                                                                         or !(empty caseProfileBB.triggeringEventForProposal)}">
                                         <p:ajax update="event-responder-intended" />
                                     </p:selectBooleanCheckbox>
                                     <p:spacer height="5px"/>
@@ -1789,7 +1802,7 @@
                                                      disabled="#{caseProfileBB.selectedEvent.requestActionByDefaultMuniCEO 
                                                                  or !caseProfileBB.includeActionRequest 
                                                                  or caseProfileBB.selectedEvent.responseComplete
-                                                                 or !(empty caseProfileBB.triggeringEventForRequestedCaseAction)}"
+                                                                 or !(empty caseProfileBB.triggeringEventForProposal)}"
                                                      converter="userConverter">
                                         <f:selectItem itemLabel="select a user..." noSelectionOption="true" />
                                         <f:selectItems id="users-selitems" value="#{userBB.userList}"  var="unus" itemValue="#{unus}" 
@@ -1918,19 +1931,19 @@
                                     <h:outputText value="Public access control code"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
-                                    <h:inputText value="#{caseUpdateBB.formControlCode}"/>
+                                    <h:inputText value="#{caseProfileBB.currentCase.publicControlCode}"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
                                     <h:outputText value="Case name"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
-                                    <h:inputText value="#{caseUpdateBB.formCaseName}"/>
+                                    <h:inputText value="#{caseProfileBB.currentCase.caseName}"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
                                     <h:outputText value="Opening date"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
-                                    <p:calendar value="#{caseUpdateBB.formOriginDate}" 
+                                    <p:calendar value="#{caseProfileBB.currentCase.originationDateUtilDate}" 
                                                 mode="popup" tabindex="3"
                                                 id="formCaseOriginationDateCal"
                                                 showOn="button"
@@ -1947,7 +1960,7 @@
                                     <h:outputText value="Notes:"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
-                                    <h:inputTextarea value="#{caseUpdateBB.formCaseNotes}"/>
+                                    <h:inputTextarea value="#{caseProfileBB.currentCase.notes}"/>
                                 </h:panelGroup> 
                                 <h:panelGroup>
                                     <h:outputLabel class="bold" value="Public access reference num: " for="selcase-pacc" />
@@ -1969,7 +1982,7 @@
                                 </h:panelGroup>
                             </h:panelGrid>
                             <p:spacer height="10px"/>
-                            <p:commandButton ajax="false" value="Update Case" action="#{caseUpdateBB.updateCase}"  icon="fa fa-edit"/>
+                            <p:commandButton ajax="true" value="Update Case" action="#{caseProfileBB.updateCase}"  icon="fa fa-edit"/>
                         </h:form>
                     </p:dialog>
 

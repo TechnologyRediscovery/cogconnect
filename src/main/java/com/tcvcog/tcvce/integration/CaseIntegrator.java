@@ -25,7 +25,7 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.CECaseBaseClass;
 import com.tcvcog.tcvce.entities.CasePhase;
-import com.tcvcog.tcvce.entities.CasePhaseChangeRule;
+import com.tcvcog.tcvce.entities.EventRule;
 import com.tcvcog.tcvce.entities.EventType;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.User;
@@ -452,7 +452,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
              if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
         } // close finally
         
-        return cc.setCaseStage(c);
+        return c;
     }
     
     
@@ -507,6 +507,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         ViolationIntegrator cvi = getCodeViolationIntegrator();
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         
+        // Wrap our base class in the subclass wrapper--an odd design structure, indeed
         CECase cse = new CECase(caseBare);
 
         // *** POPULATE LISTS OF EVENTS, NOTICES, CITATIONS, AND VIOLATIONS ***
@@ -536,9 +537,11 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
 
         c.setCaseName(rs.getString("casename"));
         
-        CasePhase cp = CasePhase.valueOf(rs.getString("casephase"));
-        c.setCasePhase(cp);
-        c.setCasePhaseIcon(si.getIcon(cp));
+        
+        // let business logic in coordinators set the icon
+//        CasePhase cp = CasePhase.valueOf(rs.getString("casephase"));
+//        c.setCasePhase(cp);
+//        c.setCasePhaseIcon(si.getIcon(cp));
 
         c.setOriginationDate(rs.getTimestamp("originationdate")
                 .toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
@@ -660,7 +663,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
     
     /**
      * Updates the values in the CECase in the DB but does NOT
- edit the data in connected tables, namely CodeViolation, EventCECase, and Person
+ edit the data in connected tables, namely CodeViolation, CECaseEvent, and Person
  Use calls to other add methods in this class for adding additional
  violations, events, and people to a CE case.
      * 
@@ -789,8 +792,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
      * @return
      * @throws SQLException
      */
-    private CasePhaseChangeRule generateCasePhaseChangeRule(ResultSet rs) throws SQLException, IntegrationException{
-        CasePhaseChangeRule cpcr = new CasePhaseChangeRule();
+    private EventRule generateCaseChangeRule(ResultSet rs) throws SQLException, IntegrationException{
+        EventRule cpcr = new EventRule();
         EventIntegrator ei = getEventIntegrator();
         
         cpcr.setRuleID(rs.getInt("ruleid"));
@@ -812,7 +815,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         cpcr.setForbiddenExtantEventCatID(rs.getInt("forbiddenextanteventcat"));
 
         cpcr.setTriggeredEventCategoryID(rs.getInt("triggeredeventcat"));
-        cpcr.setTriggeredEventCategoryID(rs.getInt("triggeredeventcatreqcat"));
+
         
         cpcr.setActive(rs.getBoolean("active"));
         cpcr.setMandatory(rs.getBoolean("mandatory"));
@@ -833,8 +836,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
      * @return
      * @throws IntegrationException 
      */
-    public CasePhaseChangeRule getPhaseChangeRule(int ruleid) throws IntegrationException{
-        CasePhaseChangeRule rule = null;
+    public EventRule getEventRule(int ruleid) throws IntegrationException{
+        EventRule rule = null;
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -844,14 +847,14 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
                         "       requiredextanteventtype, forbiddenextanteventtype, requiredextanteventcat, \n" +
                         "       forbiddenextanteventcat, triggeredeventcat, active, mandatory, \n" +
                         "       treatreqphaseasthreshold, treatforbidphaseasthreshold, rejectrulehostifrulefails, \n" +
-                        "       description, triggeredeventcatreqcat\n" +
-                        "  FROM public.cecasephasechangerule WHERE ruleid = ?;";
+                        "       description\n" +
+                        "  FROM public.eventrule WHERE ruleid = ?;";
             stmt = con.prepareStatement(s);
             stmt.setInt(1, ruleid);
 
             rs = stmt.executeQuery();
             while(rs.next()){
-                rule = generateCasePhaseChangeRule(rs);
+                rule = generateCaseChangeRule(rs);
             }
 
         } catch (SQLException ex) {

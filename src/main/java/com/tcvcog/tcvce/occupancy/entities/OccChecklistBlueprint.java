@@ -19,6 +19,7 @@ package com.tcvcog.tcvce.occupancy.entities;
 
 import com.tcvcog.tcvce.entities.Municipality;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a set of space types and their associated code elements
@@ -28,7 +29,7 @@ import java.util.ArrayList;
  * 
  * @author Eric Darsow
  */
-public class ChecklistBlueprint {
+public class OccChecklistBlueprint {
     
     // note we have a lexicon switch here: in the DB, this object is 
     // derived from an inspectionchecklist row. In Javaland, we make
@@ -39,7 +40,7 @@ public class ChecklistBlueprint {
     private String description;
     private boolean active;
     
-    private ArrayList<Space> spaceList;
+    private List<OccSpace> spaceList;
 
     /**
      * @return the muni
@@ -102,14 +103,14 @@ public class ChecklistBlueprint {
     /**
      * @return the spaceList
      */
-    public ArrayList<Space> getSpaceList() {
+    public ArrayList<OccSpace> getSpaceList() {
         return spaceList;
     }
 
     /**
      * @param spaceList the spaceList to set
      */
-    public void setSpaceList(ArrayList<Space> spaceList) {
+    public void setSpaceList(ArrayList<OccSpace> spaceList) {
         this.spaceList = spaceList;
     }
 

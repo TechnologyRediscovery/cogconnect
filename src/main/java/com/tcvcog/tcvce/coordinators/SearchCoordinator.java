@@ -53,7 +53,7 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
     }
     
      public QueryCEAR getQueryInitialCEAR(User u, Municipality m) throws IntegrationException{
-        return assembleQueryCEAR(Constants.QUERY_INITIAL_CEAR, u, m, null);
+        return assembleQueryCEAR(QueryCEAREnum.UNPROCESSED, u, m, null);
         
     }
     
@@ -193,8 +193,6 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
         return sps;
     }
     
-    
-    
      /**
       * TODO : Finish!
       * @param m
@@ -269,8 +267,6 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
         
         return sps;
     }
-     
-    
     
 //    CODE ENFORCEMENT CASE QUERIES
    
@@ -286,10 +282,8 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
 //            // THE FACTORY CALL for QueryCEAR objects!!!!!!!!!!!!!!
 //            queryList.add(assembleQueryCECase(queryTitle, u, m, null));
 //        }
-
         queryList.add(assembleQueryCECase(QueryCECaseEnum.OPENCASES, u, m, null));
         return queryList;
-         
      }
      
      public QueryCECase runQuery(QueryCECase query) throws IntegrationException, CaseLifecyleException{
@@ -336,8 +330,6 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
          query = new QueryCECase(qName, m, paramsList, u);
          query.setExecutedByIntegrator(false);
          return query;
-         
-         
      }
      
      
@@ -500,7 +492,14 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
      }
      
     
-    
+    /**
+     * First gen queries. Replaced by the rest of this class
+     * 
+     * @deprecated 
+     * @param u
+     * @param m
+     * @return 
+     */
     public List<Query> getEventQueryList(User u, Municipality m){
         List<Query> queryList = new ArrayList<>();
 //        
@@ -616,7 +615,6 @@ public class SearchCoordinator extends BackingBeanUtils implements Serializable{
         // only the type
         EventCategory complianceEventCategory = ec.getInitializedEventCateogry();
         complianceEventCategory.setEventType(EventType.Compliance);
-        
         
         SearchParamsEventCECase eventParams = new SearchParamsEventCECase();
         

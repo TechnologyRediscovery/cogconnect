@@ -1,3 +1,5 @@
+-- Already integrated into patch cycle
+
 BEGIN;
 
 /*Add applicant flag for case when applicant is not a required or optional person on 
@@ -15,7 +17,7 @@ ADD COLUMN applicationpersontype persontype DEFAULT 'LegacyOwner' NOT NULL;
 
 ALTER TABLE occpermitapplicationreason
 ADD COLUMN optionalpersontypes persontype[],
-ADD COLUMN personfriendlydescription text;
+ADD COLUMN humanfriendlydescription text;
 
 -- Populate optionalpersontypes 
 

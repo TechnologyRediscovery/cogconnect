@@ -20,7 +20,8 @@ import com.tcvcog.tcvce.application.BackingBeanUtils;
 import com.tcvcog.tcvce.coordinators.SessionSystemCoordinator;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.Citation;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.Event;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.PersonType;
@@ -151,7 +152,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
     private Person generatePersonFromResultSet(ResultSet rs) throws IntegrationException {
         // Instantiates the new person object
         Person newPerson = new Person();
-        SessionSystemCoordinator ssc = getSsCoordinator();
+        SessionSystemCoordinator ssc = getSessionSystemCoordinator();
         
         try {
             newPerson.setPersonID(rs.getInt("personid"));
@@ -258,7 +259,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
                 sb.append("%'");
             }
             if(params.isFilterByAddressStreet()){
-                sb.append("AND address_streetILIKE ");
+                sb.append("AND address_street ILIKE ");
                 sb.append("'%");
                 sb.append(params.getAddrStreetSS());
                 sb.append("%'");
@@ -510,14 +511,14 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
 
     } // close insertPerson()
 
-    public void connectPersonsToEvent(EventCECase ev, List<Person> personList) throws IntegrationException {
+    public void connectPersonsToEvent(CECaseEvent ev, List<Person> personList) throws IntegrationException {
         ListIterator li = personList.listIterator();
         while (li.hasNext()) {
             connectPersonToEvent(ev, (Person) li.next());
         }
     }
 
-    public void connectPersonToEvent(EventCECase ev, Person p) throws IntegrationException {
+    public void connectPersonToEvent(CECaseEvent ev, Person p) throws IntegrationException {
 
         String query = "INSERT INTO public.ceeventperson(\n"
                 + " ceevent_eventid, person_personid)\n"
@@ -760,6 +761,38 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         return list;
 
     }
+    
+    public List<Person> getPersonList(Event ev) throws IntegrationException {
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        List<Person> list = new ArrayList<>();
+
+        try {
+            String s = "SELECT person_personid FROM public.ceeventperson WHERE ceevent_eventid = ?;";
+            stmt = con.prepareStatement(s);
+            stmt.setInt(1, ev.getEventID());
+
+            rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Person pers = getPerson(rs.getInt("person_personid"));
+                list.add(pers);
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("PersonIntegrator.getPerson | Unable to retrieve person", ex);
+        } finally {
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+            if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        } // close finally
+
+        return list;
+
+    }
+
 
     public List<Person> getPersonHistory(User u) throws IntegrationException {
         Connection con = getPostgresCon();
@@ -863,10 +896,17 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
 
     }
     
-    public ArrayList<Person> getPersonList(int propertyUnitID) throws IntegrationException{
+    
+    /**
+     * TODO: Finish!
+     * @param occPeriodID
+     * @return
+     * @throws IntegrationException 
+     */
+    public ArrayList<Person> getPersonList(int occPeriodID) throws IntegrationException{
         ArrayList<Person> personList = new ArrayList();
         String query =  "SELECT person_personid\n" +
-                        "  FROM public.propertyunitperson WHERE propertyunit_unitid=?;";
+                        "  FROM public.occperiodperson WHERE period_periodid=?;";
         
         Connection con = getPostgresCon();
         ResultSet rs = null;
@@ -874,14 +914,14 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
  
         try {
             stmt = con.prepareStatement(query);
-            stmt.setInt(1, propertyUnitID);
+            stmt.setInt(1, occPeriodID);
             rs = stmt.executeQuery();
             while(rs.next()){
                 personList.add(getPerson(rs.getInt("person_personid")));
             }
         } catch (SQLException ex) {
             System.out.println(ex.toString());
-            throw new IntegrationException("PropertyIntegrator.getProperty | Unable to retrieve property by ID number", ex);
+            throw new IntegrationException("PersonIntegrator | Unable to retrieve person list by occ period", ex);
         } finally{
              if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
              if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
@@ -976,32 +1016,32 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         if (!params.isFilterByObjectID()){
             if (params.isFilterByLastName()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("lname = ? ");
+                query.append("lname ILIKE ? ");
             }
             if (params.isFilterByFirstName()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("fname = ? ");
+                query.append("fname ILIKE ? ");
             }
             if (params.isFilterByAddressStreet()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("address_street = ? ");
+                query.append("address_street ILIKE ? ");
             }
             if (params.isFilterByCity()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("address_city = ? ");
+                query.append("address_city ILIKE ? ");
             }
             if (params.isFilterByZipCode()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("address_zip = ? ");
+                query.append("address_zip ILIKE ? ");
             }            
             if (params.isFilterByEmail()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("email = ? ");
+                query.append("email ILIKE ? ");
             }
             
             if (params.isFilterByPhoneNumber()){
                 if(notFirstCriteria){query.append("AND ");} else {notFirstCriteria = true;}
-                query.append("phonecell = ? OR phonework = ? OR phonehome = ? ");
+                query.append("phonecell ILIKE ? OR phonework ILIKE ? OR phonehome ILIKE ? ");
             }
             
         } else {

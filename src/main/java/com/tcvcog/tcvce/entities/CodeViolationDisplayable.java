@@ -33,8 +33,8 @@ public class CodeViolationDisplayable extends CodeViolation {
         this.complianceUser = cv.complianceUser;
         this.compTimeFrameComplianceEvent = cv.compTimeFrameComplianceEvent;
 
+        this.status = cv.status;
         this.ageLeadText = cv.ageLeadText;
-        this.statusString = cv.statusString;
         this.description = cv.description;
         this.notes = cv.notes;
         this.citationListAsString = cv.citationListAsString;
@@ -51,7 +51,7 @@ public class CodeViolationDisplayable extends CodeViolation {
 
     private boolean includeOrdinanceText;
     private boolean includeHumanFriendlyText;
-    private boolean includeViolationPhotos;
+    private boolean includeViolationPhotos = true;
 
     /**
      * @return the includeOrdinanceText
