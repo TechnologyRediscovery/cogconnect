@@ -48,12 +48,12 @@ def main():
     #PARID_FILE = 'parcelidlists/pitcairnparids_correct.csv'
     #PARID_FILE = 'parcelidlists/eastmckeesportparids.csv'
     #PARID_FILE = 'parcelidlists/wilkinsparcelids.csv'
-    PARID_FILE = 'parcelidlists/chalfantparcelids.csv'
-    #PARID_FILE = 'parcelidlists/swissvaleparcelids.csv'
+    #PARID_FILE = 'parcelidlists/chalfantparcelids.csv'
+    PARID_FILE = 'parcelidlists/swissvaleparcelids.csv'
     
     # used as the access key for muni codes and ID bases in the dictionaries below
     global current_muni
-    current_muni = 'chalfant'
+    current_muni = 'swissvale'
     # use as floor value for all new propertyIDs
     global PROP_ID_BASE
     PROP_ID_BASE = 100000
@@ -73,11 +73,11 @@ def main():
 
     # add these base amounts to the universal base to get starting IDs
     global muni_idbase_map
-    muni_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':70000}
+    muni_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':700000}
 
     # add these base amounts to the universal base to get starting IDs
     global person_idbase_map
-    person_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':70000}
+    person_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':700000}
 
     # jump into the actual work here
     insert_property_basetableinfo()
@@ -120,8 +120,8 @@ def get_db_conn():
         return db_conn
     db_conn = psycopg2.connect(
         dbname="cogdb",
-        user="matts207",
-        password="12345",
+        user="sylvia",
+        password="c0d3",
         host="localhost"
     )
     return db_conn
@@ -469,7 +469,7 @@ def check_current_owner(parcelid):
 # In[132]:
 
 
-def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
+def extract_and_insert_person(rawhtml, propertyid, propinserts):
     # fixed values specific to keys in lookup tables
     
 
@@ -486,7 +486,7 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
             isunder18, humanverifiedby,compositelname, mailing_address_street, mailing_address_city,
             mailing_address_state, mailing_address_zip, useseparatemailingaddr, mailing_address_thirdline,
             ghostof, ghostby, ghosttimestamp, cloneof, clonedby, clonetimestamp, referenceperson, rawtext)
-    VALUES (%(personid)s, cast ( 'ownercntylookup' as persontype), 
+    VALUES (DEFAULT, cast ( 'ownercntylookup' as persontype), 
             %(muni_municode)s, NULL, %(lname)s, 'Property Owner', 
             NULL, NULL, NULL, NULL, %(address_street)s, %(address_city)s, 
             %(address_state)s, %(address_zip)s, %(notes)s, now(), NULL, TRUE, 
@@ -497,8 +497,7 @@ def extract_and_insert_person(rawhtml, propertyid, personid, propinserts):
     insertmap = {}
     
     # load up vars for use in SQL from each of the parse methods
-    insertmap['personid'] = personid
-    print("personid:"+str(insertmap['personid']))
+   
     insertmap['muni_municode'] = str(municodemap[current_muni])
     
     insertmap['mailing_street'] = None

@@ -71,11 +71,11 @@ def main():
 
     # add these base amounts to the universal base to get starting IDs
     global muni_idbase_map
-    muni_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':70000}
+    muni_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':700000}
 
     # add these base amounts to the universal base to get starting IDs
     global person_idbase_map
-    person_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':70000}
+    person_idbase_map = {'chalfant':10000,'churchhill':20000, 'eastmckeesport':30000, 'pitcairn':40000, 'wilmerding':0, 'wilkins':50000, 'cogland':60000, 'swissvale':700000}
 
     # jump into the actual work here
     #insert_property_basetableinfo()
@@ -101,8 +101,8 @@ def get_db_conn():
         return db_conn
     db_conn = psycopg2.connect(
         dbname="cogdb",
-        user="matts207",
-        password="12345",
+        user="sylvia",
+        password="c0d3",
         host="localhost"
     )
     return db_conn
@@ -225,7 +225,7 @@ def extract_owner_name(property_html):
     return full_owners
 
 
-def extract_and_insert_person(rawhtml, ownername, personid, propinserts):
+def extract_and_insert_person(rawhtml, ownername, propinserts):
     # fixed values specific to keys in lookup tables
     
 
@@ -241,7 +241,7 @@ def extract_and_insert_person(rawhtml, ownername, personid, propinserts):
             address_state, address_zip, notes, lastupdated, expirydate, isactive, 
             isunder18, humanverifiedby,compositelname, mailing_address_street, mailing_address_city,
             mailing_address_state, mailing_address_zip, useseparatemailingaddr, mailing_address_thirdline)
-    VALUES (%(personid)s, cast ( 'ownercntylookup' as persontype), 
+    VALUES (DEFAULT, cast ( 'ownercntylookup' as persontype), 
             %(muni_municode)s, NULL, %(lname)s, 'Property Owner', 
             NULL, NULL, NULL, NULL, %(address_street)s, %(address_city)s, 
             %(address_state)s, %(address_zip)s, %(notes)s, now(), NULL, TRUE, 
@@ -254,8 +254,6 @@ def extract_and_insert_person(rawhtml, ownername, personid, propinserts):
     insertmap = {}
     
     # load up vars for use in SQL from each of the parse methods
-    insertmap['personid'] = personid
-    print("personid:"+str(insertmap['personid']))
     insertmap['muni_municode'] = str(municodemap[current_muni])
     
     insertmap['mailing_street'] = None
@@ -352,7 +350,7 @@ def update_isactive(personid):
     print("----Old person set to inactive----")
 
 
-def create_ce_event(caseid, eventid):
+def create_ce_event(caseid, eventcat):
     db_conn = get_db_conn()
     cursor = db_conn.cursor()
 
@@ -363,10 +361,10 @@ def create_ce_event(caseid, eventid):
     requiresviewconfirmation, hidden, notes, responsetimestamp, actionrequestedby_userid,
     respondernotes, responderintended_userid, requestedeventcat_catid, requestedevent_eventid,
     rejeecteventrequest, responderactual_userid, responseevent_eventid, directrequesttodefaultmuniceo)
-    VALUES (%(eventid)s, 141, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
+    VALUES (DEFAULT, %(eventcat)s, %(caseid)s, now(), now(), 'Update event from county', 99, TRUE, FALSE, FALSE, FALSE, FALSE, NULL,
     now(), NULL, NULL, NULL, NULL, NULL, FALSE, NULL, NULL, FALSE);"""
     insertmap['caseid'] = caseid
-    insertmap['eventid'] = eventid
+    insertmap['eventcat'] = eventcat
     cursor.execute(insertsql, insertmap)
     db_conn.commit()
 
@@ -392,6 +390,17 @@ def create_cecase(propid, caseid):
     imap['updater'] = UPDATING_USER_ID
     cursor.execute(insertsql, imap)
     db_conn.commit()
+
+def get_caseid(propid):
+    db_conn = get_db_conn()
+    cursor = db_conn.cursor()
+
+    caseidsql = """SELECT caseid FROM public.cecase WHERE property_propertyid=%(prop)s AND propertyinfocase=TRUE"""
+    cursor.execute(caseidsql, dict(prop=propid))
+    props = cursor.fetchall()
+    print(props)
+    return props[0]
+
     
 def update_persons():
     db = get_db_conn()
@@ -407,24 +416,19 @@ def update_persons():
             ON person.personid=propertyperson.person_personid) INNER JOIN public.property 
             ON property.propertyid=propertyperson.property_propertyid) INNER JOIN public.cecase
             ON property.propertyid=cecase.property_propertyid WHERE person.isactive=true 
-            AND person.muni_municode = 111;"""
-    personSQL = "SELECT lname FROM public.person WHERE "
-    highest_person_idSQL = "SELECT MAX(personid) FROM public.person WHERE muni_municode = %s;"
+            AND person.muni_municode = %(muni)s;"""
 
+    maps = {}
+    maps['muni'] = municode
     cursor = db.cursor()
-    cursor.execute(props, (municode, ))
+    cursor.execute(props, maps)
     propidlist = cursor.fetchall()
 
 
     print(municode)
-    cursor.execute(highest_person_idSQL, (municode,))
-    firstavailablepersonid = cursor.fetchall()[0][0] + 1
-    print(firstavailablepersonid)
-    print(propidlist[0])
 
     for p in propidlist:
         print(p)
-        time.sleep(10)
         propinserts = {}
         propinserts['street'] = p[2]
         propinserts['city'] = p[3]
@@ -454,9 +458,13 @@ def update_persons():
         county_owner_name = extract_owner_name(rawhtml)
         print("db: %s **** county: %s" % (db_owner_name, county_owner_name))
         print(db_owner_name == county_owner_name)
+        try:
+            caseid = get_caseid(propid)
+        except:
+            print("ERROR!!! Couldn't get caseid for prop")
         if(db_owner_name != county_owner_name):
             try:
-                extract_and_insert_person(rawhtml, county_owner_name, firstavailablepersonid, propinserts)
+                extract_and_insert_person(rawhtml, county_owner_name, propinserts)
                 for person in personid:
                     update_isactive(person[0])
             except Exception:
@@ -467,9 +475,17 @@ def update_persons():
             except Exception:
                 print("ERROR connecting person to property")
                 continue
+            try:
+                create_ce_event(caseid, 212)
+            except:
+                print("ERROR creating ceevent for updated person") 
             firstavailablepersonid += 1
             
         else:
+            try:
+                create_ce_event(caseid, 213)
+            except:
+                print("ERROR creating ceevent for updated person") 
             print("-----OWNER IS THE SAME...CONTINUING-----")
 
         """try:
