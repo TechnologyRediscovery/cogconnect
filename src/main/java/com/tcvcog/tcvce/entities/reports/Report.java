@@ -3,16 +3,24 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.tcvcog.tcvce.entities;
+package com.tcvcog.tcvce.entities.reports;
 
+import com.tcvcog.tcvce.entities.EntityUtils;
+import com.tcvcog.tcvce.entities.Municipality;
+import com.tcvcog.tcvce.entities.User;
+import com.tcvcog.tcvce.entities.search.Query;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  *
  * @author sylvia
  */
-public class ReportConfig extends EntityUtils implements Serializable {
+public abstract class Report
+        extends EntityUtils 
+        implements Serializable {
+    
     private String title;
     private LocalDateTime generationTimestamp;
     private String generationTimestampPretty;
@@ -21,7 +29,11 @@ public class ReportConfig extends EntityUtils implements Serializable {
     private String notes;
     private boolean sortInRevChrono;
     
-
+    /**
+     *
+     * @return
+     */
+   
     /**
      * @return the title
      */

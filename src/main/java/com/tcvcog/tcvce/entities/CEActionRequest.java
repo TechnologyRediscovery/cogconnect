@@ -35,7 +35,9 @@ import java.util.Objects;
  to an CEActionRequest to do with as they please (print, etc.)
  * @author Eric Darsow
  */
-public class CEActionRequest implements Serializable{
+public class CEActionRequest 
+        extends BOB 
+        implements Serializable, Comparable<CEActionRequest>{
     
     // requests no longer have a status--remove when fully updated
     // for the full case model
@@ -79,6 +81,11 @@ public class CEActionRequest implements Serializable{
     private String muniNotes;
     private String publicExternalNotes;
     // end threes
+    
+    /**
+     * A VERY hacky way to deal with print formatting in Chrome
+     */
+    private boolean insertPageBreakBefore = true;
     
     // these are populated on the lookup when the linked
     // tables with the String values are selected
@@ -602,6 +609,26 @@ public class CEActionRequest implements Serializable{
      */
     public void setPhotoList(List<Integer> photoList) {
         this.photoList = photoList;
+    }
+
+    @Override
+    public int compareTo(CEActionRequest o) {
+        int comp = this.dateOfRecord.compareTo(o.dateOfRecord);
+        return comp;
+    }
+
+    /**
+     * @return the insertPageBreakBefore
+     */
+    public boolean isInsertPageBreakBefore() {
+        return insertPageBreakBefore;
+    }
+
+    /**
+     * @param insertPageBreakBefore the insertPageBreakBefore to set
+     */
+    public void setInsertPageBreakBefore(boolean insertPageBreakBefore) {
+        this.insertPageBreakBefore = insertPageBreakBefore;
     }
 
     

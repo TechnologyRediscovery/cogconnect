@@ -160,6 +160,7 @@ public class CECase extends CECaseBaseClass implements Cloneable{
      */
     public List<EventCECase> getEventListActionRequests() {
 
+        eventListActionRequests = new ArrayList<>();
         if(completeEventList !=  null && completeEventList.size() >= 1){
             for(EventCECase ev: completeEventList){
                 if(ev.getRequestedEventCat()!= null 

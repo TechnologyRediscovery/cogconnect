@@ -27,7 +27,9 @@ import java.util.Objects;
  *
  * @author Eric C. Darsow
  */
-public class Event extends EntityUtils implements Serializable, Comparable<Event> {
+public class Event 
+        extends EntityUtils 
+        implements Serializable, Comparable<Event> {
     
     private int eventID;
     
@@ -52,7 +54,7 @@ public class Event extends EntityUtils implements Serializable, Comparable<Event
     
     /*Case event requests fields */
     
-    // utility memvar which is true if there's a requested
+    // utility "pass through" memvar which is true if there's a requested
     // event category in actionRequestCateogry
     private boolean requestsAction;
     

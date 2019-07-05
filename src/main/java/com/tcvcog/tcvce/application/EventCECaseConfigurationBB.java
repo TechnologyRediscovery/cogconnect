@@ -37,10 +37,10 @@ import javax.faces.event.ActionEvent;
  *
  * @author Eric C. Darsow
  */
-public class EventConfigurationBB extends BackingBeanUtils implements Serializable{
+public class EventCECaseConfigurationBB extends BackingBeanUtils implements Serializable{
 
     private EventCategory selectedEventCategory;
-    private ArrayList<EventCategory> eventCategoryList;
+    private List<EventCategory> eventCategoryList;
     private List<Icon> iconList;
      
     private EventType[] eventTypeList;
@@ -70,11 +70,26 @@ public class EventConfigurationBB extends BackingBeanUtils implements Serializab
     private boolean newFormHidable;
     
     
-    public EventConfigurationBB() {
+    public EventCECaseConfigurationBB() {
     }
     
     @PostConstruct
     public void initBean(){
+        
+        if(eventCategoryList == null){
+            try {
+                EventIntegrator ei = getEventIntegrator();
+                eventCategoryList = ei.getEventCategoryList();
+                //return eventCategoryList;
+            } catch (IntegrationException ex) {
+                 getFacesContext().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, 
+                            "Unable to load event category list", 
+                            "This must be corrected by the System Administrator"));
+            }
+            
+        } 
+        
         SystemIntegrator si = getSystemIntegrator();
         try {
             iconList = si.getIconList();
@@ -206,23 +221,8 @@ public class EventConfigurationBB extends BackingBeanUtils implements Serializab
     /**
      * @return the eventCategoryList
      */
-    public ArrayList<EventCategory> getEventCategoryList() {
-        if(eventCategoryList == null){
-            try {
-                EventIntegrator ei = getEventIntegrator();
-                eventCategoryList = ei.getEventCategoryList();
-                //return eventCategoryList;
-            } catch (IntegrationException ex) {
-                 getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                            "Unable to load event category list", 
-                            "This must be corrected by the System Administrator"));
-            }
-            return eventCategoryList;
-            
-        } else {
-            return eventCategoryList;
-        }
+    public List<EventCategory> getEventCategoryList() {
+        return eventCategoryList;
         
     }
 

@@ -3,15 +3,22 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.tcvcog.tcvce.entities;
+package com.tcvcog.tcvce.entities.reports;
 
-import com.tcvcog.tcvce.entities.search.SearchParamsCEEvents;
+import com.tcvcog.tcvce.entities.search.Query;
+import com.tcvcog.tcvce.entities.search.QueryBacked;
+import com.tcvcog.tcvce.entities.search.QueryEventCECase;
+import com.tcvcog.tcvce.entities.search.SearchParamsEventCECase;
 
 /**
  *
  * @author sylvia
  */
-public class ReportConfigCEEventList extends ReportConfig{
+public class ReportConfigCEEventList 
+        extends Report
+        implements QueryBacked{
+    
+    private QueryEventCECase queryParams;
     
     private boolean includeAttachedPersons;
     private boolean includeEventTypeSummaryChart;
@@ -19,7 +26,8 @@ public class ReportConfigCEEventList extends ReportConfig{
     private boolean includeCaseActionRequestInfo;
     private boolean includeCompleteQueryParamsDump;
     
-    private SearchParamsCEEvents queryParams;
+    
+    
 
     /**
      * @return the includeCaseActionRequestInfo
@@ -91,20 +99,20 @@ public class ReportConfigCEEventList extends ReportConfig{
         this.includeCompleteQueryParamsDump = includeCompleteQueryParamsDump;
     }
 
-    /**
-     * @return the queryParams
-     */
-    public SearchParamsCEEvents getQueryParams() {
+
+    @Override
+    public Query getBOBQuery() {
         return queryParams;
     }
 
-    /**
-     * @param queryParams the queryParams to set
-     */
-    public void setQueryParams(SearchParamsCEEvents queryParams) {
-        this.queryParams = queryParams;
+    @Override
+    public void setBOBQuery(Query q) {
+        queryParams = (QueryEventCECase) q;
     }
     
+    public SearchParamsEventCECase getQueryParams(){
+        return (SearchParamsEventCECase) queryParams.getParamsList().get(0);
+    }
     
     
     

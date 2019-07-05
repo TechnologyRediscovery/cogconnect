@@ -29,12 +29,14 @@ import com.tcvcog.tcvce.entities.CasePhaseChangeRule;
 import com.tcvcog.tcvce.entities.EventType;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.User;
+import com.tcvcog.tcvce.entities.search.QueryCECase;
 import com.tcvcog.tcvce.entities.search.SearchParamsCECases;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.ArrayList;
@@ -92,7 +94,37 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         return caseList;
     }
     
-    public List<CECase> queryCECases(SearchParamsCECases params) throws IntegrationException, CaseLifecyleException{
+    /**
+     * Entry point for all Queries of Code Enforcement cases. Note that this 
+     * method takes in a QUery object and will inject into its results list
+     * the returned ojects from each of its searchParams.
+     * @param q
+     * @return
+     * @throws IntegrationException
+     * @throws CaseLifecyleException 
+     */
+     public QueryCECase runQueryCECase(QueryCECase q) throws IntegrationException, CaseLifecyleException{
+        List<SearchParamsCECases> pList = q.getParmsList();
+        
+        for(SearchParamsCECases sp: pList){
+            q.addToResults(getCECases(sp));
+        }
+        q.setExecutionTimestamp(LocalDateTime.now());
+        System.out.println("CaseIntegrator.QueryCECases | returning list of size: " + q.getBOBResultList().size());
+        q.setExecutedByIntegrator(true);
+        return q;
+        
+    }
+    
+    /**
+     * Internal serach method for Code Enforcement case using a SearchParam
+     * subclass. Outsiders will use runQueryCECase or runQueryCECase
+     * @param params
+     * @return
+     * @throws IntegrationException
+     * @throws CaseLifecyleException 
+     */
+    private List<CECase> getCECases(SearchParamsCECases params) throws IntegrationException, CaseLifecyleException{
         ArrayList<CECase> caseList = new ArrayList();
         Connection con = getPostgresCon();
         ResultSet rs = null;

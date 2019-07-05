@@ -17,6 +17,9 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.coordinators;
 
+import com.tcvcog.tcvce.entities.reports.ReportConfigCECaseList;
+import com.tcvcog.tcvce.entities.reports.ReportConfigCECase;
+import com.tcvcog.tcvce.entities.reports.ReportCEARList;
 import com.tcvcog.tcvce.application.BackingBeanUtils;
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.EventException;
@@ -24,6 +27,8 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.domain.PermissionsException;
 import com.tcvcog.tcvce.domain.ViolationException;
 import com.tcvcog.tcvce.entities.*;
+import com.tcvcog.tcvce.entities.search.QueryCEAR;
+import com.tcvcog.tcvce.entities.search.QueryCEAREnum;
 import com.tcvcog.tcvce.entities.search.SearchParamsCEActionRequests;
 import com.tcvcog.tcvce.entities.search.SearchParamsCECases;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
@@ -40,8 +45,10 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.faces.application.FacesMessage;
@@ -84,8 +91,6 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         cse.setShowHiddenEvents(false);
         cse.setShowInactiveEvents(false);
         
-   
-        
         // check to make sure we have empty lists on all of our list objects
         if(cse.getViolationList() == null){
             cse.setViolationList(new ArrayList<CodeViolation>());
@@ -110,9 +115,13 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         
         Collections.sort(cse.getNoticeList());
         Collections.reverse(cse.getNoticeList());
+        
         Collections.sort(cse.getEventListActionRequests());
         Collections.sort(cse.getVisibleEventList());
         Collections.reverse(cse.getVisibleEventList()); 
+        
+        // optionally sorted events based on action
+        // requests
         
         return cse;
     }
@@ -123,56 +132,20 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         
     }
     
-    
-    /**
-     * The temporarily hard-coded values for default search parameters for various
-     * types of search Param objects
-     * 
-     * @param m
-     * @return an search params object for CEAction requests with default values
-     * which amount to requests that aren't attached to a case and were submitted
-     * within the past 10 years
-     */
-    public SearchParamsCEActionRequests getDefaultSearchParamsCEActionRequests(Municipality m){
-        
-            System.out.println("CaseCoordinator.configureDefaultSearchParams "
-                    + "| found actionrequest param object");
-            
-            SearchParamsCEActionRequests sps = new SearchParamsCEActionRequests();
-
-            sps.setMuni(m);
-            LocalDateTime pastTenYears = LocalDateTime.now().minusYears(10);
-            sps.setStartDate(pastTenYears);
-            
-            // action requests cannot have a time stamp past the current datetime
-            sps.setEndDate(LocalDateTime.now());
-
-            sps.setUseAttachedToCase(true);
-            sps.setAttachedToCase(false);
-            sps.setUseMarkedUrgent(false);
-            sps.setUseNotAtAddress(false);
-            sps.setUseRequestStatus(false);
-        
-        return sps;
+   
+    public ReportCEARList getInitializedReportConficCEARs(User u, Municipality m){
+        ReportCEARList rpt = new ReportCEARList();
+        rpt.setIncludePhotos(true);
+        rpt.setPrintFullCEARQueue(false);
+        rpt.setCreator(u);
+        rpt.setMuni(m);
+        rpt.setGenerationTimestamp(LocalDateTime.now());
+        return rpt;
     }
-    
-    
     
    
     
-    /**
-     * Front door for querying cases in the DB
-     * 
-     * @param params pre-configured search parameters
-     * @return
-     * @throws IntegrationException 
-     * @throws com.tcvcog.tcvce.domain.CaseLifecyleException 
-     */
-    public List<CECase> queryCECases(SearchParamsCECases params) throws IntegrationException, CaseLifecyleException{
-        CaseIntegrator ci = getCaseIntegrator();
-        return ci.queryCECases(params);
-        
-    }
+   
     
     public List<CECase> getUserCaseHistoryList(User u) throws IntegrationException, CaseLifecyleException{
         CaseIntegrator caseInt = getCaseIntegrator();
@@ -240,7 +213,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
             originationEvent = ec.getInitializedEvent(newCase, originationCategory);
             StringBuilder sb = new StringBuilder();
             sb.append("Case generated from the submission of a Code Enforcement Action Request");
-            sb.append("<br/>");
+            sb.append("<br />");
             sb.append("ID#:");
             sb.append(cear.getRequestID());
             sb.append(" submitted by ");
@@ -290,7 +263,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         sb.append(" with contact number: ");
         sb.append(messagerPhone);
         sb.append(": ");
-        sb.append("<br/><br/>");
+        sb.append("<br /><br />");
         sb.append(msg);
         
         EventCoordinator ec = getEventCoordinator();
@@ -1347,5 +1320,17 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         return al;
     }
     
+    public Map<String, Number> computeCountsByCEARReason(List<CEActionRequest> reqList){
+        CEActionRequest cear;
+        Map<String, Number> map = new LinkedHashMap<>();
+        for(CEActionRequest req: reqList){
+            if(map.containsKey(req.getIssueTypeString())){
+                map.put(req.getIssueTypeString(), map.get(req.getIssueTypeString()).intValue() + 1);
+            } else {
+                map.put(req.getIssueTypeString(), 1);
+            }
+        }
+        return map;
+    }
    
 } // close class

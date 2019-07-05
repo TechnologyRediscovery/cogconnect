@@ -5,10 +5,12 @@
  */
 package com.tcvcog.tcvce.entities;
 
+import com.tcvcog.tcvce.application.BackingBeanUtils;
+
 /**
  *
  * @author sylvia
  */
-public class ReportConfigPropertyList extends ReportConfig{
+public abstract class BOB extends EntityUtils{
     
 }
