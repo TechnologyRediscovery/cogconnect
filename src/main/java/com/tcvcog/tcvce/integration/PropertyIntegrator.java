@@ -888,7 +888,6 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
         pu.setRental(rs.getBoolean("rental"));
         pu.setProperty(getProperty(rs.getInt("property_propertyid")));
         pu.setInactive(rs.getBoolean("inactive"));
-        pu.setPropertyUnitPersonList(persInt.getPersonList(rs.getInt("property_propertyid")));
         return pu;
     }
 
@@ -988,7 +987,7 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
 
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
-
+        
         try {
             stmt = con.prepareStatement(query);
             stmt.setString(1, uc.getUnitNumber());
@@ -999,7 +998,7 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
             stmt.setBoolean(6, uc.isRemoved());
             stmt.setBoolean(7, uc.isAdded());
             stmt.setTimestamp(8, Timestamp.valueOf(LocalDateTime.now()));
-            stmt.setInt(9, uc.getApprovedBy());
+            stmt.setInt(9, uc.getApprovedBy().getUserID());
             stmt.setString(10, uc.getChangedBy());
             stmt.setInt(11, uc.getPropertyID());
 
@@ -1079,6 +1078,7 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
 
     public PropertyUnitChange generatePropertyUnitChange(ResultSet rs) throws SQLException, IntegrationException {
         PersonIntegrator persInt = getPersonIntegrator();
+        UserIntegrator ui = getUserIntegrator();
         PropertyUnitChange uc = new PropertyUnitChange();
         uc.setUnitChangeID(rs.getInt("unitchangeid"));
         uc.setUnitID(rs.getInt("unit_unitid"));
@@ -1086,18 +1086,22 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
         uc.setNotes(rs.getString("notes"));
         uc.setOtherKnownAddress(rs.getString("otherknownaddress"));
         uc.setRental(rs.getBoolean("rental"));
-        uc.setThisUnit(getPropertyUnit(rs.getInt("unit_unitid")));
         uc.setAdded(rs.getBoolean("added"));
         uc.setRemoved(rs.getBoolean("removed"));
         uc.setChangedOn(rs.getTimestamp("changedon"));
         uc.setApprovedOn(rs.getTimestamp("approvedon"));
-        uc.setApprovedBy(rs.getInt("approvedby"));
+        uc.setApprovedBy(ui.getUser(rs.getInt("approvedby")));
         uc.setChangedBy(rs.getString("changedby"));
         uc.setPropertyID(rs.getInt("property_propertyid"));
-        uc.setInactive(rs.getTimestamp("inactive"));
+        uc.setActive(rs.getBoolean("active"));
         return uc;
     }
 
+    /**
+     * TODO occbeta
+     * @param changeToUpdate
+     * @throws IntegrationException 
+     */
     public void updatePropertyUnitChange(PropertyUnitChange changeToUpdate) throws IntegrationException {
         String query = "UPDATE public.propertyunitchange\n"
                 + "SET unitnumber=?, unit_unitid=?, otherknownaddress=?, notes=?, rental=?,\n"
@@ -1128,11 +1132,11 @@ public class PropertyIntegrator extends BackingBeanUtils implements Serializable
 
             stmt.setTimestamp(9, changeToUpdate.getApprovedOn());
 
-            stmt.setInt(10, changeToUpdate.getApprovedBy());
+            stmt.setInt(10, changeToUpdate.getApprovedBy().getUserID());
 
             stmt.setString(11, changeToUpdate.getChangedBy());
 
-            stmt.setTimestamp(12, changeToUpdate.getInactive());
+            stmt.setBoolean(12, changeToUpdate.isActive());
 
             stmt.setInt(13, changeToUpdate.getUnitChangeID());
             

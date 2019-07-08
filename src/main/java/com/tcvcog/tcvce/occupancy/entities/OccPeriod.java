@@ -7,8 +7,10 @@ package com.tcvcog.tcvce.occupancy.entities;
 
 import com.tcvcog.tcvce.entities.BOBSource;
 import com.tcvcog.tcvce.entities.EntityUtils;
-import com.tcvcog.tcvce.entities.EventProposalImplementation;
+import com.tcvcog.tcvce.entities.Proposal;
+import com.tcvcog.tcvce.entities.EventRule;
 import com.tcvcog.tcvce.entities.Person;
+import com.tcvcog.tcvce.entities.PersonOccPeriod;
 import com.tcvcog.tcvce.entities.Photograph;
 import com.tcvcog.tcvce.entities.User;
 import java.io.Serializable;
@@ -25,9 +27,10 @@ public class OccPeriod extends EntityUtils implements Serializable{
     private int propertyUnitID;
     
     private List<OccPermitApplication> applicationList;
-    private List<Person> personList;
+    private List<PersonOccPeriod> personList;
     private List<OccEvent> eventList;
-    private List<EventProposalImplementation> eventProposalList;
+    private List<Proposal> eventProposalList;
+    private List<EventRule> eventRuleList;
     private List<OccInspection> inspectionList;
     private List<OccPermit> permitList;
     private List<Integer> photoIDList;
@@ -49,6 +52,8 @@ public class OccPeriod extends EntityUtils implements Serializable{
     private LocalDateTime endDate;
     private LocalDateTime endDateCertifiedTS;
     private User endDateCertifiedBy;
+    
+    private int defaultValidityPeriodDays;
     
     private LocalDateTime authorizedTS;
     private User authorizedBy;
@@ -81,7 +86,7 @@ public class OccPeriod extends EntityUtils implements Serializable{
     /**
      * @return the personList
      */
-    public List<Person> getPersonList() {
+    public List<PersonOccPeriod> getPersonList() {
         return personList;
     }
 
@@ -95,7 +100,7 @@ public class OccPeriod extends EntityUtils implements Serializable{
     /**
      * @return the eventProposalList
      */
-    public List<EventProposalImplementation> getEventProposalList() {
+    public List<Proposal> getEventProposalList() {
         return eventProposalList;
     }
 
@@ -263,7 +268,7 @@ public class OccPeriod extends EntityUtils implements Serializable{
     /**
      * @param personList the personList to set
      */
-    public void setPersonList(List<Person> personList) {
+    public void setPersonList(List<PersonOccPeriod> personList) {
         this.personList = personList;
     }
 
@@ -277,7 +282,7 @@ public class OccPeriod extends EntityUtils implements Serializable{
     /**
      * @param eventProposalList the eventProposalList to set
      */
-    public void setEventProposalList(List<EventProposalImplementation> eventProposalList) {
+    public void setEventProposalList(List<Proposal> eventProposalList) {
         this.eventProposalList = eventProposalList;
     }
 
@@ -419,6 +424,34 @@ public class OccPeriod extends EntityUtils implements Serializable{
      */
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    /**
+     * @return the defaultValidityPeriodDays
+     */
+    public int getDefaultValidityPeriodDays() {
+        return defaultValidityPeriodDays;
+    }
+
+    /**
+     * @param defaultValidityPeriodDays the defaultValidityPeriodDays to set
+     */
+    public void setDefaultValidityPeriodDays(int defaultValidityPeriodDays) {
+        this.defaultValidityPeriodDays = defaultValidityPeriodDays;
+    }
+
+    /**
+     * @return the eventRuleList
+     */
+    public List<EventRule> getEventRuleList() {
+        return eventRuleList;
+    }
+
+    /**
+     * @param eventRuleList the eventRuleList to set
+     */
+    public void setEventRuleList(List<EventRule> eventRuleList) {
+        this.eventRuleList = eventRuleList;
     }
      
     

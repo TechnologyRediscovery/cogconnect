@@ -127,7 +127,7 @@ CREATE TABLE public.moneyoccperiodtypefee
 
 CREATE TABLE public.moneyoccperiodfeepayment
 (
-	payment_paymentid 					INTEGER NOT NULL CONSTRAINT moneyoccperiodfeepayment_paymentid_fk REFERENCES payment (paymentid),
+	payment_paymentid 					INTEGER NOT NULL CONSTRAINT moneyoccperiodfeepayment_paymentid_fk REFERENCES moneypayment (paymentid),
 	occperiodassignedfee_id 			INTEGER NOT NULL CONSTRAINT moneyoccpermittypefeepayment_occperassignedfee_fk REFERENCES moneyoccperiodfeeassigned (moneyoccperassignedfeeid),
 	CONSTRAINT moneyoccperiodfeepayment_comp_pk PRIMARY KEY (payment_paymentid, occperiodassignedfee_id)
 
@@ -159,7 +159,7 @@ CREATE TABLE public.cecaserule
 );
 
 
-ALTER TABLE public.eventproposalimplementation RENAME expiredorinactive  TO active;
+ALTER TABLE public.eventproposalimplementation RENAME expiredorinactive TO active;
 ALTER TABLE public.eventproposalimplementation
    ALTER COLUMN active SET DEFAULT true;
 
@@ -181,8 +181,8 @@ ALTER TABLE public.eventproposalimplementation
 
 -- TODO
 -- run this after proposals
-ALTER TABLE public.occpermitapplicationreason
-   ALTER COLUMN periodtypeproposal_periodid SET NOT NULL;
+-- ALTER TABLE public.occpermitapplicationreason
+--    ALTER COLUMN periodtypeproposal_periodid SET NOT NULL;
 
 
 
@@ -190,5 +190,5 @@ ALTER TABLE public.occpermitapplicationreason
 
 INSERT INTO public.dbpatch(
             patchnum, patchfilename, datepublished, patchauthor, notes)
-    VALUES (13, 'database/patches/dbpatch_beta13.sql', '05-05-2019', 'ecd', 'occ permit application revisions');
+    VALUES (16, 'database/patches/dbpatch_beta16.sql', '07-02-2019', 'ecd', 'occ permit application revisions');
 
