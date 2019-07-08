@@ -469,7 +469,7 @@ def check_current_owner(parcelid):
 # In[132]:
 
 
-def extract_and_insert_person(rawhtml, propertyid, propinserts):
+def extract_and_insert_person(rawhtml, propertyid, propinserts, personid):
     # fixed values specific to keys in lookup tables
     
 
@@ -486,7 +486,7 @@ def extract_and_insert_person(rawhtml, propertyid, propinserts):
             isunder18, humanverifiedby,compositelname, mailing_address_street, mailing_address_city,
             mailing_address_state, mailing_address_zip, useseparatemailingaddr, mailing_address_thirdline,
             ghostof, ghostby, ghosttimestamp, cloneof, clonedby, clonetimestamp, referenceperson, rawtext)
-    VALUES (DEFAULT, cast ( 'ownercntylookup' as persontype), 
+    VALUES (%(personid)s, cast ( 'ownercntylookup' as persontype), 
             %(muni_municode)s, NULL, %(lname)s, 'Property Owner', 
             NULL, NULL, NULL, NULL, %(address_street)s, %(address_city)s, 
             %(address_state)s, %(address_zip)s, %(notes)s, now(), NULL, TRUE, 
@@ -499,6 +499,7 @@ def extract_and_insert_person(rawhtml, propertyid, propinserts):
     # load up vars for use in SQL from each of the parse methods
    
     insertmap['muni_municode'] = str(municodemap[current_muni])
+    insertmap['personid'] = personid
     
     insertmap['mailing_street'] = None
     insertmap['mailing_city'] = None
@@ -718,7 +719,7 @@ def insert_property_basetableinfo():
         # and sql errors bubbling up from the extraction methods that also commit
             personid = next(personidgenerator)
             #print(1)
-            extract_and_insert_person(rawhtml, propid, personid, addrmap)
+            extract_and_insert_person(rawhtml, propid, personid, addrmap, personid)
             #print(2)
             connect_person_to_property(propid, personid)
             #print(3)
