@@ -30,16 +30,18 @@ import com.tcvcog.tcvce.entities.*;
 import com.tcvcog.tcvce.entities.search.QueryCEAR;
 import com.tcvcog.tcvce.entities.search.QueryCEAREnum;
 import com.tcvcog.tcvce.entities.search.SearchParamsCEActionRequests;
-import com.tcvcog.tcvce.entities.search.SearchParamsCECases;
+import com.tcvcog.tcvce.entities.search.SearchParamsCECase;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.CitationIntegrator;
 import com.tcvcog.tcvce.integration.ViolationIntegrator;
 import com.tcvcog.tcvce.integration.EventIntegrator;
+import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
 import com.tcvcog.tcvce.integration.SystemIntegrator;
 import com.tcvcog.tcvce.util.Constants;
 import java.io.Serializable;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -276,7 +278,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
     public CECase getInitializedCECase(Property p, User u){
         CECase newCase = new CECase();
         
-        int casePCC = getControlCodeFromTime();
+        int casePCC = generateControlCodeFromTime();
         // caseID set by postgres sequence
         // timestamp set by postgres
         // no closing date, by design of case flow
@@ -436,9 +438,9 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         EventIntegrator ei = getEventIntegrator();
         int insertedEventID = 0;
         
-        if(e.getCategory().getCasePhaseChangeRule() != null){
-            evalulateCasePhaseChangeRule(c, e);
-        }
+//        if(e.getCategory().getCasePhaseChangeRule() != null){
+//            evalulateCasePhaseChangeRule(c, e);
+//        }
         
         switch(eventType){
             case Action:
@@ -470,15 +472,10 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
     private boolean evalulateCasePhaseChangeRule(CECase cse, CECaseEvent event) 
             throws IntegrationException, CaseLifecyleException, ViolationException{
         
-        EventRule rule = event.getCategory().getCasePhaseChangeRule();
+        EventRuleAbstract rule = new EventRuleAbstract();
         boolean rulePasses = false;
         
-        if(rule.getRequiredCurrentCasePhase() != null){
-            if(rule.isTreatRequiredPhaseAsThreshold()){
-                if (cse.getCasePhase().getOrder() >= rule.getRequiredCurrentCasePhase().getOrder()){
-                    if(ruleSubcheck_forbiddenCasePhase(cse, rule)
-                            &&
-                        ruleSubcheck_requiredEventType(cse, rule)
+                    if( ruleSubcheck_requiredEventType(cse, rule)
                             &&
                         ruleSubcheck_forbiddenEventType(cse, rule)
                             &&
@@ -488,11 +485,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
                             rulePasses = true;
                             implementPassedCasePhaseChangeRule(cse, rule);
                     }
-                }
-            } else if (cse.getCasePhase() == rule.getRequiredCurrentCasePhase()){
-                if(ruleSubcheck_forbiddenCasePhase(cse, rule)
-                            &&
-                        ruleSubcheck_requiredEventType(cse, rule)
+                if(ruleSubcheck_requiredEventType(cse, rule)
                             &&
                         ruleSubcheck_forbiddenEventType(cse, rule)
                             &&
@@ -502,34 +495,21 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
                             rulePasses = true;
                             implementPassedCasePhaseChangeRule(cse, rule);
                 }
-            }
-        }
         return rulePasses;
     }
     
     
-    private boolean ruleSubcheck_forbiddenCasePhase(CECase cse, EventRule rule){
-        boolean subcheckPasses = true;
-        
-        if(rule.isTreatForbiddenPhaseAsThreshold()){
-                if (cse.getCasePhase().getOrder() >= rule.getForbiddenCurrentCasePhase().getOrder()){
-                    subcheckPasses = false;
-                }
-            } else if (cse.getCasePhase() == rule.getForbiddenCurrentCasePhase()){
-                subcheckPasses = false;
-            }
-        return subcheckPasses;
-    }
+   
     
     
-    private boolean ruleSubcheck_requiredEventType(CECase cse, EventRule rule){
+    private boolean ruleSubcheck_requiredEventType(CECase cse, EventRuleAbstract rule){
         boolean subcheckPasses = true;
-        if(rule.getRequiredExtantEventType() != null){
+        if(rule.getRequiredeventtype()!= null){
             subcheckPasses = false;
             Iterator<CECaseEvent> iter = cse.getVisibleEventList().iterator();
             while(iter.hasNext()){
                 CECaseEvent ev = iter.next();
-                if(ev.getCategory().getEventType() == rule.getRequiredExtantEventType()){
+                if(ev.getCategory().getEventType() == rule.getRequiredeventtype()){
                     subcheckPasses = true;
                 }
             }
@@ -538,26 +518,26 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
     }
    
     
-    private boolean ruleSubcheck_forbiddenEventType(CECase cse, EventRule rule){
+    private boolean ruleSubcheck_forbiddenEventType(CECase cse, EventRuleAbstract rule){
         boolean subcheckPasses = true;
         Iterator<CECaseEvent> iter = cse.getVisibleEventList().iterator();
         while(iter.hasNext()){
             CECaseEvent ev = iter.next();
-            if(ev.getCategory().getEventType() == rule.getRequiredExtantEventType()){
+            if(ev.getCategory().getEventType() == rule.getRequiredeventtype()){
                 subcheckPasses = false;
             }
         }
         return subcheckPasses;
     }
     
-    private boolean ruleSubcheck_requiredEventCategory(CECase cse, EventRule rule){
+    private boolean ruleSubcheck_requiredEventCategory(CECase cse, EventRuleAbstract rule){
         boolean subcheckPasses = true;
-        if(rule.getRequiredExtantEventCatID() != 0){
+        if(rule.getRequiredEventCat().getCategoryID() != 0){
             subcheckPasses = false;
             Iterator<CECaseEvent> iter = cse.getVisibleEventList().iterator();
             while(iter.hasNext()){
                 CECaseEvent ev = iter.next();
-                if(ev.getCategory().getCategoryID() == rule.getRequiredExtantEventCatID()){
+                if(ev.getCategory().getCategoryID() == rule.getRequiredEventCat().getCategoryID()){
                     subcheckPasses = true;
                 }
             }
@@ -565,35 +545,34 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         return subcheckPasses;
     }
     
-    private boolean ruleSubcheck_forbiddenEventCategory(CECase cse, EventRule rule){
+    private boolean ruleSubcheck_forbiddenEventCategory(CECase cse, EventRuleAbstract rule){
         boolean subcheckPasses = true;
         Iterator<CECaseEvent> iter = cse.getVisibleEventList().iterator();
         while(iter.hasNext()){
             CECaseEvent ev = iter.next();
-            if(ev.getCategory().getCategoryID() == rule.getRequiredExtantEventCatID()){
+            if(ev.getCategory().getCategoryID() == rule.getRequiredEventCat().getCategoryID()){
                 subcheckPasses = false;
             }
         }
         return subcheckPasses;
     }
     
-    private void implementPassedCasePhaseChangeRule(CECase cse, EventRule rule) 
+    private void implementPassedCasePhaseChangeRule(CECase cse, EventRuleAbstract rule) 
             throws IntegrationException, CaseLifecyleException, ViolationException{
         CaseIntegrator ci = getCaseIntegrator();
         EventCoordinator ec = getEventCoordinator();
         CECaseEvent newEvent = null;
         
         CasePhase oldCP = cse.getCasePhase();
-        cse.setCasePhase(rule.getTargetCasePhase());
         ci.changeCECasePhase(cse);
         ec.generateAndInsertPhaseChangeEvent(cse, oldCP, rule);
-        if(rule.getTriggeredEventCategoryID() != 0){
-            newEvent = ec.getInitializedEvent(cse, ec.getInitiatlizedEventCategory(rule.getTriggeredEventCategoryID()));
-            
-            attachNewEventToCECase(cse, newEvent, null);
-            System.out.println("CaseCoordinator.implementPassedCasePhaseChangeRule "  + newEvent.getCategory().getEventCategoryTitle());
-        }
-        
+//        if(rule.getTriggeredEventCategoryID() != 0){
+//            newEvent = ec.getInitializedEvent(cse, ec.getInitiatlizedEventCategory(rule.getTriggeredEventCategoryID()));
+//            
+//            attachNewEventToCECase(cse, newEvent, null);
+//            System.out.println("CaseCoordinator.implementPassedCasePhaseChangeRule "  + newEvent.getCategory().getEventCategoryTitle());
+//        }
+//        
     }
    
    
@@ -689,7 +668,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         // we'll probably want to get this text from a resource file instead of
         // hardcoding it down here in the Java
         e.setDateOfRecord(LocalDateTime.now());
-        e.setOwner(getFacesUser());
+        e.setOwner(getSessionUser());
         e.setDescription(getResourceBundle(Constants.MESSAGE_TEXT).getString("automaticClosingEventDescription"));
         e.setNotes(getResourceBundle(Constants.MESSAGE_TEXT).getString("automaticClosingEventNotes"));
         e.setCaseID(c.getCaseID());
@@ -848,13 +827,15 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
     }
     
         
-    public NoticeOfViolation novGetNewNOVSkeleton(CECase cse, Municipality m){
+    public NoticeOfViolation novGetNewNOVSkeleton(CECase cse, Municipality m) throws SQLException{
         SystemIntegrator si = getSystemIntegrator();
         NoticeOfViolation nov = new NoticeOfViolation();
         nov.setViolationList(new ArrayList<CodeViolationDisplayable>());
         nov.setDateOfRecord(LocalDateTime.now());
+        MunicipalityIntegrator mi = getMunicipalityIntegrator();
+        
         try {
-            nov.setStyle(si.getPrintStyle(m.getDefaultNOVStyleID()));
+            nov.setStyle(si.getPrintStyle(mi.getMuniComplete(m.getMuniCode()).getDefaultNOVStyleID()));
         } catch (IntegrationException ex) {
             System.out.println(ex);
         }
@@ -1158,18 +1139,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
        return rptCse;
    }
    
-   /**
-    * Currently a pass-through method for object creation
-    * @param ec
-    * @return
-    * @throws IntegrationException 
-    */
-   public EventRule getCasePhaseChangeRule(EventCategory ec) throws IntegrationException{
-       CaseIntegrator ci = getCaseIntegrator();
-       return ci.getEventRule(ec.getCasePhaseChangeRule().getRuleID());
-       
-   }
-   
+ 
    
     
     public CodeViolation generateNewCodeViolation(CECase c, EnforcableCodeElement ece){

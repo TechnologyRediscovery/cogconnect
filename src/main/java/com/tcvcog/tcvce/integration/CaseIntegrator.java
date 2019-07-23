@@ -23,14 +23,14 @@ import com.tcvcog.tcvce.coordinators.EventCoordinator;
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CECase;
-import com.tcvcog.tcvce.entities.CECaseBaseClass;
+import com.tcvcog.tcvce.entities.CaseBase;
 import com.tcvcog.tcvce.entities.CasePhase;
-import com.tcvcog.tcvce.entities.EventRule;
+import com.tcvcog.tcvce.entities.EventRuleAbstract;
 import com.tcvcog.tcvce.entities.EventType;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.User;
 import com.tcvcog.tcvce.entities.search.QueryCECase;
-import com.tcvcog.tcvce.entities.search.SearchParamsCECases;
+import com.tcvcog.tcvce.entities.search.SearchParamsCECase;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -56,7 +56,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
     public CaseIntegrator() {
     }
     
-    public ArrayList getCECasesByProp(Property p) throws IntegrationException, CaseLifecyleException{
+    public ArrayList getCECasesByProp(Property p) 
+            throws IntegrationException, CaseLifecyleException{
         ArrayList<CECase> caseList = new ArrayList();
         String query = "SELECT \n" +
             "  caseid\n" +
@@ -104,10 +105,10 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
      * @throws CaseLifecyleException 
      */
      public QueryCECase runQueryCECase(QueryCECase q) throws IntegrationException, CaseLifecyleException{
-        List<SearchParamsCECases> pList = q.getParmsList();
+        List<SearchParamsCECase> pList = q.getParmsList();
         
-        for(SearchParamsCECases sp: pList){
-            q.addToResults(getCECases(sp));
+        for(SearchParamsCECase sp: pList){
+            q.addToResults(searchForCECase(sp));
         }
         q.setExecutionTimestamp(LocalDateTime.now());
         System.out.println("CaseIntegrator.QueryCECases | returning list of size: " + q.getBOBResultList().size());
@@ -124,8 +125,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
      * @throws IntegrationException
      * @throws CaseLifecyleException 
      */
-    private List<CECase> getCECases(SearchParamsCECases params) throws IntegrationException, CaseLifecyleException{
-        ArrayList<CECase> caseList = new ArrayList();
+    private List<CECase> searchForCECase(SearchParamsCECase params) throws IntegrationException, CaseLifecyleException{
+        List<CECase> caseList = new ArrayList<>();
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;
@@ -288,50 +289,6 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         
     }
     
-    /**
-     * Used by the EventCordinator to setup events by attaching default code officers
-     * to events designated for such
-     * @param cecaseid
-     * @return the code officer user associated with the given case
-     * @throws IntegrationException 
-     */
-    public User getDefaultCodeOfficer(int cecaseid) throws IntegrationException{
-        MunicipalityIntegrator mi = getMunicipalityIntegrator();
-        User u = null;
-        String query = "SELECT municipality_municode \n" +
-                       "FROM cecase INNER JOIN property ON (property_propertyid = propertyid) \n" +
-                       "WHERE caseid = ?;";
-        Connection con = getPostgresCon();
-        ResultSet rs = null;
-        PreparedStatement stmt = null;
-        
-        try {
-            
-            stmt = con.prepareStatement(query);
-            stmt.setInt(1, cecaseid);
-            //System.out.println("CaseIntegrator.| sql: " + stmt.toString());
-            rs = stmt.executeQuery();
-            
-            while(rs.next()){
-                u = mi.getDefaultCodeOfficer(rs.getInt("municipality_municode"));
-            }
-            
-        } catch (SQLException ex) {
-            System.out.println(ex.toString());
-            throw new IntegrationException("Cannot get default code officer", ex);
-            
-        } finally{
-             if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
-             if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
-             if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
-        } // close finally
-        
-        return u;
-        
-    }
-    
-    
-    
     public ArrayList getOpenCECases(int muniCode) throws IntegrationException, CaseLifecyleException{
         
         ArrayList<CECase> caseList = new ArrayList();
@@ -370,7 +327,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         
         return caseList;
     }
-    public ArrayList getCECaseHistory(int muniCode) throws IntegrationException, CaseLifecyleException{
+    public List getCECaseHistory(int muniCode) throws IntegrationException, CaseLifecyleException{
         
         ArrayList<CECase> caseList = new ArrayList();
         String query = "SELECT \n" +
@@ -419,7 +376,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
      * @return
      * @throws IntegrationException 
      */
-    public CECaseBaseClass getCECaseBare(int ceCaseID) throws IntegrationException, CaseLifecyleException{
+    public CaseBase getCECaseBare(int ceCaseID) throws IntegrationException, CaseLifecyleException{
         String query = "SELECT caseid, cecasepubliccc, property_propertyid, propertyunit_unitid, \n" +
             "            login_userid, casename, casephase, originationdate, closingdate, \n" +
             "            creationtimestamp, notes, paccenabled, allowuplinkaccess \n" +
@@ -428,7 +385,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         CaseCoordinator cc = getCaseCoordinator();
         PreparedStatement stmt = null;
         Connection con = null;
-        CECaseBaseClass c = null;
+        CaseBase c = null;
         
         try {
             
@@ -483,7 +440,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
             rs = stmt.executeQuery();
             
             while(rs.next()){
-                CECaseBaseClass baseCase = generateCECaseNoLists(rs);
+                CaseBase baseCase = generateCECaseNoLists(rs);
                 cse = generateCECase(baseCase);
             }
             
@@ -501,7 +458,7 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         return cc.configureCECase(cse);
     }
     
-    public CECase generateCECase(CECaseBaseClass caseBare) throws SQLException, IntegrationException{
+    public CECase generateCECase(CaseBase caseBare) throws SQLException, IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         CitationIntegrator ci = getCitationIntegrator();
         ViolationIntegrator cvi = getCodeViolationIntegrator();
@@ -519,14 +476,14 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         return cse;
     }
     
-     public CECaseBaseClass generateCECaseNoLists(ResultSet rs) throws SQLException, IntegrationException{
+     public CaseBase generateCECaseNoLists(ResultSet rs) throws SQLException, IntegrationException{
         PropertyIntegrator pi = getPropertyIntegrator();
         UserIntegrator ui = getUserIntegrator();
         SystemIntegrator si = getSystemIntegrator();
         
         int ceCaseID = rs.getInt("caseid");
         
-        CECaseBaseClass c = new CECaseBaseClass();
+        CaseBase c = new CaseBase();
 
         c.setCaseID(ceCaseID);
         c.setPublicControlCode(rs.getInt("cecasepubliccc"));
@@ -596,6 +553,11 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         } // close finally
         
         return caseList;
+    }
+    
+    public CECase getPropertyInfoCase(int propID){
+        // TODO: finish me!
+        return new CECase();
     }
 
     public CECase insertNewCECase(CECase ceCase) throws IntegrationException, CaseLifecyleException{
@@ -749,7 +711,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
     }
     
     
-    public List<CECase> getCECaseHistoryList(User u) throws IntegrationException, CaseLifecyleException{
+    public List<CECase> getCECaseHistoryList(User u) 
+            throws IntegrationException, CaseLifecyleException{
         List<CECase> cList = new ArrayList<>();
         Connection con = getPostgresCon();
         PreparedStatement stmt = null;
@@ -785,91 +748,8 @@ public class CaseIntegrator extends BackingBeanUtils implements Serializable{
         return cList;
     }
     
-    /**
-     * Instantiation and population of CasePhaseRule changes
-     * 
-     * @param rs
-     * @return
-     * @throws SQLException
-     */
-    private EventRule generateCaseChangeRule(ResultSet rs) throws SQLException, IntegrationException{
-        EventRule cpcr = new EventRule();
-        EventIntegrator ei = getEventIntegrator();
-        
-        cpcr.setRuleID(rs.getInt("ruleid"));
-        cpcr.setTitle(rs.getString("title"));
-        
-        if(rs.getString("targetcasephase") != null) 
-            cpcr.setTargetCasePhase(CasePhase.valueOf(rs.getString("targetcasephase")));
-        if(rs.getString("requiredcurrentcasephase") != null) 
-            cpcr.setRequiredCurrentCasePhase(CasePhase.valueOf(rs.getString("requiredcurrentcasephase")));
-        if(rs.getString("forbiddencurrentcasephase") != null) 
-            cpcr.setForbiddenCurrentCasePhase(CasePhase.valueOf(rs.getString("forbiddencurrentcasephase")));
-        
-        if(rs.getString("requiredextanteventtype") != null)
-            cpcr.setRequiredExtantEventType(EventType.valueOf(rs.getString("requiredextanteventtype")));
-        if(rs.getString("forbiddenextanteventtype") != null)
-            cpcr.setForbiddenExtantEventType(EventType.valueOf(rs.getString("forbiddenextanteventtype")));
-        
-        cpcr.setRequiredExtantEventCatID(rs.getInt("requiredextanteventcat"));
-        cpcr.setForbiddenExtantEventCatID(rs.getInt("forbiddenextanteventcat"));
-
-        cpcr.setTriggeredEventCategoryID(rs.getInt("triggeredeventcat"));
-
-        
-        cpcr.setActive(rs.getBoolean("active"));
-        cpcr.setMandatory(rs.getBoolean("mandatory"));
-        cpcr.setTreatRequiredPhaseAsThreshold(rs.getBoolean("treatreqphaseasthreshold"));
-        cpcr.setTreatRequiredPhaseAsThreshold(rs.getBoolean("treatforbidphaseasthreshold"));
-        cpcr.setRejectRuleHostIfRuleFails(rs.getBoolean("rejectrulehostifrulefails"));
-        cpcr.setDescription(rs.getString("description"));
-        
-        return cpcr;
-    }
-    
-    
-    
-    /**
-     * Getter for rules by ID
-     * 
-     * @param ruleid
-     * @return
-     * @throws IntegrationException 
-     */
-    public EventRule getEventRule(int ruleid) throws IntegrationException{
-        EventRule rule = null;
-        Connection con = getPostgresCon();
-        PreparedStatement stmt = null;
-        ResultSet rs = null;
-
-        try {
-            String s = "SELECT ruleid, title, targetcasephase, requiredcurrentcasephase, forbiddencurrentcasephase, \n" +
-                        "       requiredextanteventtype, forbiddenextanteventtype, requiredextanteventcat, \n" +
-                        "       forbiddenextanteventcat, triggeredeventcat, active, mandatory, \n" +
-                        "       treatreqphaseasthreshold, treatforbidphaseasthreshold, rejectrulehostifrulefails, \n" +
-                        "       description\n" +
-                        "  FROM public.eventrule WHERE ruleid = ?;";
-            stmt = con.prepareStatement(s);
-            stmt.setInt(1, ruleid);
-
-            rs = stmt.executeQuery();
-            while(rs.next()){
-                rule = generateCaseChangeRule(rs);
-            }
-
-        } catch (SQLException ex) {
-            System.out.println(ex.toString());
-            throw new IntegrationException("Unable to generate case history list", ex);
-        } finally {
-            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
-            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
-            if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
-        } // close finally
-        
-        return rule;
-        
-        
-    }  
+   
+   
         
     
 }

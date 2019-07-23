@@ -23,7 +23,7 @@ import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.PersonType;
 import com.tcvcog.tcvce.entities.User;
-import com.tcvcog.tcvce.entities.search.SearchParamsPersons;
+import com.tcvcog.tcvce.entities.search.SearchParamsPerson;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
 import com.tcvcog.tcvce.util.Constants;
 import java.io.Serializable;
@@ -53,14 +53,14 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
     }
     
     
-    public SearchParamsPersons getDefaultSearchParamsPersons(Municipality m){
-        SearchParamsPersons spp = new SearchParamsPersons();
+    public SearchParamsPerson getDefaultSearchParamsPersons(Municipality m){
+        SearchParamsPerson spp = new SearchParamsPerson();
         // on the parent class SearchParams
         spp.setFilterByStartEndDate(false);
         spp.setLimitResultCountTo100(true);
         spp.setMuni(m);
         
-        // on the subclass SearchParamsPersons
+        // on the subclass SearchParamsPerson
         spp.setFilterByFirstName(true);
         spp.setFilterByLastName(true);
         spp.setOnlySearchCompositeLastNames(false);
@@ -123,11 +123,11 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
         sb.append(previousNotes);
         sb.append("<br />**************************************<br />");
         sb.append("NOTE CREATED BY: ");
-        sb.append(getSessionBean().getFacesUser().getPerson().getFirstName());
+        sb.append(getSessionBean().getSessionUser().getPerson().getFirstName());
         sb.append(" ");
-        sb.append(getSessionBean().getFacesUser().getPerson().getLastName());
+        sb.append(getSessionBean().getSessionUser().getPerson().getLastName());
         sb.append(" (User ID ");
-        sb.append(String.valueOf(getSessionBean().getFacesUser().getUserID()));
+        sb.append(String.valueOf(getSessionBean().getSessionUser().getUserID()));
         sb.append(") on ");
         sb.append(getPrettyDate(LocalDateTime.now()));
         sb.append(":<br />");
@@ -172,11 +172,11 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
         this.personTypes = personTypes;
     }
     /**
-     * Returns SearchParamsPersons object with its member variables set to default values.
+     * Returns SearchParamsPerson object with its member variables set to default values.
      * @return params
      */
-    public SearchParamsPersons  getDefaultSearchParamsPersons(){
-        SearchParamsPersons params = new SearchParamsPersons();
+    public SearchParamsPerson  getDefaultSearchParamsPersons(){
+        SearchParamsPerson params = new SearchParamsPerson();
         
         // superclass parameters
         params.setFilterByMuni(false);
@@ -204,9 +204,9 @@ public class PersonCoordinator extends BackingBeanUtils implements Serializable{
      * @return
      * @throws IntegrationException 
      */
-    public List<Person> queryPersons(SearchParamsPersons params, boolean anonymizeResults) throws IntegrationException {
+    public List<Person> queryPersons(SearchParamsPerson params, boolean anonymizeResults) throws IntegrationException {
         PersonIntegrator pi = getPersonIntegrator();
-        List<Person> results = pi.queryPersons(params);
+        List<Person> results = pi.searchForPersons(params);
         
         if (anonymizeResults){
             results = anonymizePersonList(results);          

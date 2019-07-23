@@ -25,14 +25,14 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.domain.ViolationException;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.CasePhase;
-import com.tcvcog.tcvce.entities.EventRule;
+import com.tcvcog.tcvce.entities.EventRuleAbstract;
 import com.tcvcog.tcvce.entities.CodeViolation;
 import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.EventCategory;
 import com.tcvcog.tcvce.entities.EventType;
 import com.tcvcog.tcvce.entities.EventCECaseCasePropBundle;
-import com.tcvcog.tcvce.entities.EventProposal;
-import com.tcvcog.tcvce.entities.EventProposalImplementation;
+import com.tcvcog.tcvce.entities.Directive;
+import com.tcvcog.tcvce.entities.Proposal;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.reports.ReportConfigCEEventList;
@@ -150,10 +150,11 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         // remember: event proposals are specified in an EventCategory object
         // but when we build an Event object, the ProposalImplementation lives on the Event itself
         // 
-        if(ev.getCategory().getEventProposal() != null){
-            EventProposalImplementation imp = ei.getProposalImplAssociatedWithEvent(ev);
-            imp.setCurrentUserCanEvaluateProposal(determineCanUserEvaluateProposal(ev, user, userAuthMuniList));
-            ev.setEventProposalImplementation(imp);
+        if(ev.getCategory().getDirective() != null){
+//            TODO: OccBeta
+//            Proposal imp = ei.getProposalImplAssociatedWithEvent(ev);
+//            imp.setCurrentUserCanEvaluateProposal(determineCanUserEvaluateProposal(ev, user, userAuthMuniList));
+//            ev.setEventProposalImplementation(imp);
         }
         ev.setPersonList(pi.getPersonList(ev));
         
@@ -190,7 +191,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      */
     public boolean determineCanUserEvaluateProposal(CECaseEvent ev, User u, List<Municipality> muniList){
         boolean canEvaluateProposal = false;
-        EventProposal evProp = ev.getCategory().getEventProposal();
+        Directive evProp = ev.getCategory().getDirective();
         
         // direct event assignment allows view conf to cut across regular permissions
         // checks
@@ -371,7 +372,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         event.setDateOfRecord(LocalDateTime.now());
         event.setDescription(updateViolationDescr);
         //even descr set by violation coordinator
-        event.setOwner(getFacesUser());
+        event.setOwner(getSessionUser());
         // disclose to muni from violation coord
         // disclose to public from violation coord
         event.setActive(true);
@@ -453,7 +454,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * @throws CaseLifecyleException 
      * @throws com.tcvcog.tcvce.domain.ViolationException 
      */
-    public void generateAndInsertPhaseChangeEvent(CECase currentCase, CasePhase pastPhase, EventRule rule) 
+    public void generateAndInsertPhaseChangeEvent(CECase currentCase, CasePhase pastPhase, EventRuleAbstract rule) 
             throws IntegrationException, CaseLifecyleException, ViolationException{
         
         EventIntegrator ei = getEventIntegrator();
@@ -473,7 +474,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
             sb.append("following the passing of CasePhaseChangeRule:  ");
             sb.append(rule.getTitle());
             sb.append(", no. ");
-            sb.append(rule.getRuleID());
         }
         event.setDescription(sb.toString());
         
@@ -481,7 +481,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         event.setDateOfRecord(LocalDateTime.now());
         // not sure if I can access the session level info for the specific user here in the
         // coordinator bean
-        event.setOwner(getFacesUser());
+        event.setOwner(getSessionUser());
         event.setActive(true);
         
         cc.attachNewEventToCECase(currentCase, event, null);
@@ -492,9 +492,17 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
 
     } // close method
     
+
+
+    /**
+     * TODO occbeta
+     * 
+     * @deprecated 
+     * @param ev
+     * @throws IntegrationException 
+     */
     public void logResponseToActionRequest(CECaseEvent ev) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
-        ei.logResponseToProposal(ev);
     }
     
     
@@ -525,7 +533,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         event.setDateOfRecord(LocalDateTime.now());
         // not sure if I can access the session level info for the specific user here in the
         // coordinator bean
-        event.setOwner(getFacesUser());
+        event.setOwner(getSessionUser());
         event.setActive(true);
         
         cc.attachNewEventToCECase(currentCase, event, null);

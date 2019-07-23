@@ -17,27 +17,33 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.entities;
 
-import com.tcvcog.tcvce.occupancy.entities.OccPermit;
-import com.tcvcog.tcvce.occupancy.entities.OccPermitApplication;
+import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
+import com.tcvcog.tcvce.entities.occupancy.OccPermit;
+import com.tcvcog.tcvce.entities.occupancy.OccPermitApplication;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Eric C. Darsow
  */
 public class PropertyUnit {
+    protected int unitID;
+    protected int propertyID;
+    protected String unitNumber;
     
-    private int unitID;
-    private Property property;
+    protected String notes;
+    protected String otherKnownAddress;
     
-    private String unitNumber;
+    protected LocalDateTime rentalIntentDateStart;
+    protected LocalDateTime rentalIntentDateStop;
+    protected User rentalIntentLastUpdatedBy;
+    protected String rentalNotes;
+    protected boolean active;
     
-    private String notes;
-    private String otherKnownAddress;
-    
-    private boolean rental;
-    
-    private boolean inactive;
+    protected int conditionIntensityClassID;
+    protected LocalDateTime lastUpdatedTS;
     
 
     /**
@@ -98,41 +104,125 @@ public class PropertyUnit {
     }
 
     /**
-     * @return the rental
+  
+   
+    /**
+     * @return the rentalIntentDateStart
      */
-    public boolean isRental() {
-        return rental;
+    public LocalDateTime getRentalIntentDateStart() {
+        return rentalIntentDateStart;
     }
 
     /**
-     * @param rental the rental to set
+     * @return the rentalIntentDateStop
      */
-    public void setRental(boolean rental) {
-        this.rental = rental;
-    }
-
-
-    /**
-     * @return the property
-     */
-    public Property getProperty() {
-        return property;
+    public LocalDateTime getRentalIntentDateStop() {
+        return rentalIntentDateStop;
     }
 
     /**
-     * @param property the property to set
+     * @return the rentalIntentLastUpdatedBy
      */
-    public void setProperty(Property property) {
-        this.property = property;
+    public User getRentalIntentLastUpdatedBy() {
+        return rentalIntentLastUpdatedBy;
     }
 
-    public boolean isInactive() {
-        return inactive;
+    /**
+     * @return the rentalNotes
+     */
+    public String getRentalNotes() {
+        return rentalNotes;
     }
 
-    public void setInactive(boolean inactive) {
-        this.inactive = inactive;
+    /**
+     * @return the active
+     */
+    public boolean isActive() {
+        return active;
     }
+
+    /**
+     * @return the conditionIntensityClassID
+     */
+    public int getConditionIntensityClassID() {
+        return conditionIntensityClassID;
+    }
+
+    /**
+     * @param rentalIntentDateStart the rentalIntentDateStart to set
+     */
+    public void setRentalIntentDateStart(LocalDateTime rentalIntentDateStart) {
+        this.rentalIntentDateStart = rentalIntentDateStart;
+    }
+
+    /**
+     * @param rentalIntentDateStop the rentalIntentDateStop to set
+     */
+    public void setRentalIntentDateStop(LocalDateTime rentalIntentDateStop) {
+        this.rentalIntentDateStop = rentalIntentDateStop;
+    }
+
+    /**
+     * @param rentalIntentLastUpdatedBy the rentalIntentLastUpdatedBy to set
+     */
+    public void setRentalIntentLastUpdatedBy(User rentalIntentLastUpdatedBy) {
+        this.rentalIntentLastUpdatedBy = rentalIntentLastUpdatedBy;
+    }
+
+    /**
+     * @param rentalNotes the rentalNotes to set
+     */
+    public void setRentalNotes(String rentalNotes) {
+        this.rentalNotes = rentalNotes;
+    }
+
+    /**
+     * @param active the active to set
+     */
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * @param conditionIntensityClassID the conditionIntensityClassID to set
+     */
+    public void setConditionIntensityClassID(int conditionIntensityClassID) {
+        this.conditionIntensityClassID = conditionIntensityClassID;
+    }
+
+    /**
+     * @return the propertyID
+     */
+    public int getPropertyID() {
+        return propertyID;
+    }
+
+    /**
+     * @param propertyID the propertyID to set
+     */
+    public void setPropertyID(int propertyID) {
+        this.propertyID = propertyID;
+    }
+
+    /**
+     * @return the lastUpdatedTS
+     */
+    public LocalDateTime getLastUpdatedTS() {
+        return lastUpdatedTS;
+    }
+
+    /**
+     * @param lastUpdatedTS the lastUpdatedTS to set
+     */
+    public void setLastUpdatedTS(LocalDateTime lastUpdatedTS) {
+        this.lastUpdatedTS = lastUpdatedTS;
+    }
+    /**
+     * @return the periodList
+     */
+    /**
+     * @param periodList the periodList to set
+     */
  
     
     

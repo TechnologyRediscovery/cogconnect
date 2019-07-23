@@ -17,6 +17,7 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.application;
 
+import com.tcvcog.tcvce.coordinators.BlobCoordinator;
 import com.tcvcog.tcvce.coordinators.CaseCoordinator;
 import com.tcvcog.tcvce.coordinators.DataCoordinator;
 import com.tcvcog.tcvce.coordinators.EventCoordinator;
@@ -31,7 +32,7 @@ import com.tcvcog.tcvce.entities.reports.ReportConfigCECase;
 import com.tcvcog.tcvce.entities.reports.ReportConfigCECaseList;
 import com.tcvcog.tcvce.entities.search.Query;
 import com.tcvcog.tcvce.entities.search.QueryCECase;
-import com.tcvcog.tcvce.entities.search.SearchParamsCECases;
+import com.tcvcog.tcvce.entities.search.SearchParamsCECase;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.CodeIntegrator;
 import com.tcvcog.tcvce.integration.ViolationIntegrator;
@@ -70,7 +71,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     
     private List<CECase> caseList;
     private ArrayList<CECase> filteredCaseList;
-    private SearchParamsCECases searchParams;
+    private SearchParamsCECase searchParams;
     
     private List<QueryCECase> queryList;
     private QueryCECase selectedCECaseQuery;
@@ -140,8 +141,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         CaseCoordinator cc = getCaseCoordinator();
         CaseIntegrator ci = getCaseIntegrator();
         
-        queryList = sc.buildQueryCECaseList(getSessionBean().getActiveMuni(), getSessionBean().getFacesUser());
-        selectedCECaseQuery = getSessionBean().getSessionQueryCECase();
+        queryList = sc.buildQueryCECaseList(getSessionBean().getSessionMuni(), getSessionBean().getSessionUser());
+        selectedCECaseQuery = getSessionBean().getQueryCECase();
         searchParams = selectedCECaseQuery.getSearchParamsList().get(0);
         if(!selectedCECaseQuery.isExecutedByIntegrator()){
             try {
@@ -183,7 +184,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     }
     
     public String viewCasePropertyProfile(){
-        getSessionBean().getPropertyQueue().add(0, currentCase.getProperty());
+        getSessionBean().getSessionPropertyList().add(0, currentCase.getProperty());
         positionCurrentCaseAtHeadOfQueue();
         return "properties";
     }
@@ -233,8 +234,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     
     
     private void positionCurrentCaseAtHeadOfQueue(){
-        getSessionBean().getcECaseQueue().remove(currentCase);
-        getSessionBean().getcECaseQueue().add(0, currentCase);
+        getSessionBean().getSessionCECaseList().remove(currentCase);
+        getSessionBean().getSessionCECaseList().add(0, currentCase);
         getSessionBean().setSessionCECase(currentCase);
     }
 
@@ -272,19 +273,20 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         }
     }
 
-    public void deletePhoto(int photoID) {
+    
+    public void deletePhoto(int blobID){
         // TODO: remove entry from linker table for deleted photos
-        for (Integer pid : this.selectedViolation.getPhotoList()) {
-            if (pid.compareTo(photoID) == 0) {
-                this.selectedViolation.getPhotoList().remove(pid);
+        for(Integer pid : this.selectedViolation.getBlobIDList()){
+            if(pid.compareTo(blobID) == 0){
+                this.selectedViolation.getBlobIDList().remove(pid);
                 break;
             }
         }
-        ImageServices is = getImageServices();
+        BlobCoordinator blobc = getBlobCoordinator();
         try {
-            is.deletePhotograph(photoID);
+            blobc.deleteBlob(blobID);
         } catch (IntegrationException ex) {
-            System.out.println("CaseProfileBB.deletePhotograph | " + ex);
+            System.out.println(ex);
         }
     }
     
@@ -336,8 +338,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
 
         reportCECase.setCse(currentCase);
 
-        reportCECase.setCreator(getSessionBean().getFacesUser());
-        reportCECase.setMuni(getSessionBean().getActiveMuni());
+        reportCECase.setCreator(getSessionBean().getSessionUser());
+        reportCECase.setMuni(getSessionBean().getSessionMuni());
         reportCECase.setGenerationTimestamp(LocalDateTime.now());
 
         try {
@@ -354,7 +356,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         getSessionBean().setSessionReport(reportCECase);
         // force our reportingBB to choose the right bundle
         getSessionBean().setReportConfigCECaseList(null);
-        getSessionBean().setSessionQueryCECase(selectedCECaseQuery);
+        getSessionBean().setQueryCECase(selectedCECaseQuery);
 
         return "reportCECase";
     }
@@ -373,15 +375,15 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     
 
     public String generateReportCECaseList() {
-        reportCECaseList.setCreator(getSessionBean().getFacesUser());
-        reportCECaseList.setMuni(getSessionBean().getActiveMuni());
+        reportCECaseList.setCreator(getSessionBean().getSessionUser());
+        reportCECaseList.setMuni(getSessionBean().getSessionMuni());
         reportCECaseList.setGenerationTimestamp(LocalDateTime.now());
         
         getSessionBean().setReportConfigCECaseList(reportCECaseList);
         getSessionBean().setReportConfigCECase(null);
-        getSessionBean().setcECaseQueue(caseList);
+        getSessionBean().setSessionCECaseList(caseList);
         getSessionBean().setSessionReport(reportCECaseList);
-        getSessionBean().setSessionQueryCECase(selectedCECaseQuery);
+        getSessionBean().setQueryCECase(selectedCECaseQuery);
         
         return "reportCECaseList";
 
@@ -462,7 +464,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
 
         // category is already set from initialization sequence
         selectedEvent.setCaseID(currentCase.getCaseID());
-        selectedEvent.setOwner(getSessionBean().getFacesUser());
+        selectedEvent.setOwner(getSessionBean().getSessionUser());
         try {
         
             // Removed for proposal overhaul
@@ -471,10 +473,10 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
 //                selectedEvent.setActionRequestedBy(getSessionBean().getFacesUser());
 //            }
 
-            if(triggeringEventForProposal != null && selectedEvent.getEventProposalImplementation() != null){
-                selectedEvent.getEventProposalImplementation().setGeneratingEventID(triggeringEventForProposal.getEventID());
-                
-            }
+//            if(triggeringEventForProposal != null && selectedEvent.getEventProposalImplementation() != null){
+//                selectedEvent.getEventProposalImplementation().setGeneratingEventID(triggeringEventForProposal.getEventID());
+//                
+//            }
             // writing null in here is fine if the event wasn't triggered
 
             // main entry point for handing the new event off to the CaseCoordinator
@@ -493,8 +495,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
             // (We saved the triggering event when the take action button was clicked, before the event
             // add dialog was displayed and event-specific data is entered by the user
             if (triggeringEventForProposal != null) {
-                triggeringEventForProposal.getEventProposalImplementation().setResponseEvent(selectedEvent);
-                triggeringEventForProposal.getEventProposalImplementation().setResponderActual(getSessionBean().getFacesUser());
+//                triggeringEventForProposal.getEventProposalImplementation().setResponseEvent(selectedEvent);
+//                triggeringEventForProposal.getEventProposalImplementation().setResponderActual(getSessionBean().getFacesUser());
                 ec.logResponseToActionRequest(triggeringEventForProposal);
                 getFacesContext().addMessage(null,
                         new FacesMessage(FacesMessage.SEVERITY_INFO,
@@ -532,8 +534,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
      */
     public String jumpToCasesToEditCEEvent(EventCECaseCasePropBundle ev) {
         CaseIntegrator ci = getCaseIntegrator();
-        caseList = getSessionBean().getcECaseQueue();
-        List<Property> propList = getSessionBean().getPropertyQueue();
+        caseList = getSessionBean().getSessionCECaseList();
+        List<Property> propList = getSessionBean().getSessionPropertyList();
         if (caseList != null) {
             caseList.add(1, caseList.remove(0));
             try {
@@ -555,7 +557,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         EventCoordinator ec = getEventCoordinator();
 //        currentCase.getEventList().remove(selectedEvent);
         try {
-            ec.editEvent(selectedEvent, getSessionBean().getFacesUser());
+            ec.editEvent(selectedEvent, getSessionBean().getSessionUser());
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
                     "Event udpated!", ""));
         } catch (IntegrationException ex) {
@@ -570,11 +572,11 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
 
     public void commitActionRequestRejection(ActionEvent ev) {
         EventCoordinator ec = getEventCoordinator();
-        selectedEvent.getEventProposalImplementation().setResponderActual(getSessionBean().getFacesUser());
-        selectedEvent.getEventProposalImplementation().setProposalRejected(true);
+//        selectedEvent.getEventProposalImplementation().setResponderActual(getSessionBean().getFacesUser());
+//        selectedEvent.getEventProposalImplementation().setProposalRejected(true);
         
         // rejected Proposals by definition did not result in a new Event
-        selectedEvent.getEventProposalImplementation().setResponseEvent(null);
+//        selectedEvent.getEventProposalImplementation().setResponseEvent(null);
         try {
             ec.logResponseToActionRequest(selectedEvent);
             currentCase.getEventProposalList().remove(rejectedEventListIndex);
@@ -619,13 +621,13 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         UserIntegrator ui = getUserIntegrator();
         System.out.println("CaseProfileBB.manageCECase | caseid: " + c.getCaseID());
         try {
-            ui.logObjectView(getSessionBean().getFacesUser(), c);
+            ui.logObjectView(getSessionBean().getSessionUser(), c);
         } catch (IntegrationException ex) {
             System.out.println(ex);
         }
         currentCase = c;
         getSessionBean().setSessionCECase(currentCase);
-        getSessionBean().setActiveProp(c.getProperty());
+        getSessionBean().setSessionProperty(c.getProperty());
     }
     
     public void testButton(ActionEvent ev){
@@ -754,12 +756,12 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         // build event details package
         CECaseEvent e = null;
         try {
-            selectedViolation.setComplianceUser(getSessionBean().getFacesUser());
+            selectedViolation.setComplianceUser(getSessionBean().getSessionUser());
             e = ec.generateViolationComplianceEvent(selectedViolation);
-            e.setOwner(getSessionBean().getFacesUser());
+            e.setOwner(getSessionBean().getSessionUser());
             e.setDateOfRecord(LocalDateTime.now());
             cv.setActualComplianceDate(LocalDateTime.now());
-            cc.recordCompliance(cv, getSessionBean().getFacesUser());
+            cc.recordCompliance(cv, getSessionBean().getSessionUser());
         } catch (IntegrationException ex) {
             System.out.println(ex);
         }
@@ -782,12 +784,12 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         NoticeOfViolation nov;
         CaseCoordinator cc = getCaseCoordinator();
             if (!currentCase.getViolationListUnresolved().isEmpty()) {
-                getSessionBean().getPropertyQueue().add(0, currentCase.getProperty());
-                getSessionBean().setActiveProp(currentCase.getProperty());
+                getSessionBean().getSessionPropertyList().add(0, currentCase.getProperty());
+                getSessionBean().setSessionProperty(currentCase.getProperty());
                 positionCurrentCaseAtHeadOfQueue();
-                nov = cc.novGetNewNOVSkeleton(currentCase, getSessionBean().getActiveMuni());
-                nov.setCreationBy(getSessionBean().getFacesUser());
-                getSessionBean().setActiveNotice(nov);
+                nov = cc.novGetNewNOVSkeleton(currentCase, getSessionBean().getSessionMuni());
+                nov.setCreationBy(getSessionBean().getSessionUser());
+                getSessionBean().setSessionNotice(nov);
                 return "noticeOfViolationBuilder";
             } else {
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
@@ -799,7 +801,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     public void resetNotice(NoticeOfViolation nov) {
         CaseCoordinator cc = getCaseCoordinator();
         try {
-            cc.novResetMailing(nov, getSessionBean().getFacesUser());
+            cc.novResetMailing(nov, getSessionBean().getSessionUser());
             refreshCurrentCase();
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
@@ -813,13 +815,13 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     public String createNewCitation() {
         System.out.println("CaseProfileBB.createNewCitation  | current case tostring: "
                 + currentCase);
-        getSessionBean().setActiveCitation(null);
+        getSessionBean().setSessionCitation(null);
         positionCurrentCaseAtHeadOfQueue();
         return "citationEdit";
     }
 
     public String updateCitation(Citation cit) {
-        getSessionBean().setActiveCitation(cit);
+        getSessionBean().setSessionCitation(cit);
         positionCurrentCaseAtHeadOfQueue();
         return "citationEdit";
     }
@@ -860,13 +862,13 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     }
 
     public String printNotice(NoticeOfViolation nov) {
-        getSessionBean().setActiveNotice(nov);
+        getSessionBean().setSessionNotice(nov);
         positionCurrentCaseAtHeadOfQueue();
         return "noticeOfViolationPrint";
     }
 
     public String editNoticeOfViolation(NoticeOfViolation nov) {
-        getSessionBean().setActiveNotice(nov);
+        getSessionBean().setSessionNotice(nov);
         positionCurrentCaseAtHeadOfQueue();
         return "noticeOfViolationEditor";
     }
@@ -875,7 +877,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
         CaseCoordinator caseCoord = getCaseCoordinator();
         
         try {
-            caseCoord.novLockAndQueue(currentCase, nov, getSessionBean().getFacesUser());
+            caseCoord.novLockAndQueue(currentCase, nov, getSessionBean().getSessionUser());
         } catch (CaseLifecyleException | IntegrationException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, ex.getMessage(), ""));
@@ -922,7 +924,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     public void markNoticeOfViolationAsSent(NoticeOfViolation nov) {
         CaseCoordinator caseCoord = getCaseCoordinator();
         try {
-            caseCoord.novMarkAsSent(currentCase, nov, getSessionBean().getFacesUser());
+            caseCoord.novMarkAsSent(currentCase, nov, getSessionBean().getSessionUser());
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
                             "Marked notice as sent and added event to case",
@@ -943,7 +945,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     public void markNoticeOfViolationAsReturned(NoticeOfViolation nov) {
         CaseCoordinator caseCoord = getCaseCoordinator();
         try {
-            caseCoord.novMarkAsReturned(currentCase, nov, getSessionBean().getFacesUser());
+            caseCoord.novMarkAsReturned(currentCase, nov, getSessionBean().getSessionUser());
             caseCoord.refreshCase(currentCase);
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
@@ -1354,7 +1356,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     /**
      * @return the searchParams
      */
-    public SearchParamsCECases getSearchParams() {
+    public SearchParamsCECase getSearchParams() {
 
         return searchParams;
     }
@@ -1362,7 +1364,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     /**
      * @param searchParams the searchParams to set
      */
-    public void setSearchParams(SearchParamsCECases searchParams) {
+    public void setSearchParams(SearchParamsCECase searchParams) {
         this.searchParams = searchParams;
     }
 
@@ -1425,7 +1427,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
     public List<EventType> getAvailableEventTypeList() {
         CaseCoordinator cc = getCaseCoordinator();
         availableEventList = cc.getPermittedEventTypesForCECase(currentCase,
-                getSessionBean().getFacesUser());
+                getSessionBean().getSessionUser());
         return availableEventList;
     }
 
@@ -1511,13 +1513,13 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
      */
     public boolean isAllowedToClearActionResponse() {
         allowedToClearActionResponse = false;
-        if (selectedEvent != null) {
-            if (selectedEvent.getEventProposalImplementation() != null
-                    && ((getSessionBean().getFacesUser().getUserID() == selectedEvent.getEventProposalImplementation().getResponderActual().getUserID())
-                    || getSessionBean().getFacesUser().getKeyCard().isHasSysAdminPermissions())) {
-                allowedToClearActionResponse = true;
-            }
-        }
+//        if (selectedEvent != null) {
+//            if (selectedEvent.getEventProposalImplementation() != null
+//                    && ((getSessionBean().getFacesUser().getUserID() == selectedEvent.getEventProposalImplementation().getResponderActual().getUserID())
+//                    || getSessionBean().getFacesUser().getKeyCard().isHasSysAdminPermissions())) {
+//                allowedToClearActionResponse = true;
+//            }
+//        }
         return allowedToClearActionResponse;
     }
 

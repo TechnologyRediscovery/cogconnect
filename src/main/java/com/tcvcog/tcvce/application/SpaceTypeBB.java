@@ -19,9 +19,9 @@ package com.tcvcog.tcvce.application;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import com.tcvcog.tcvce.domain.IntegrationException;
-import com.tcvcog.tcvce.occupancy.integration.ChecklistIntegrator;
+import com.tcvcog.tcvce.occupancy.integration.OccInspectionIntegrator;
 
-import com.tcvcog.tcvce.occupancy.entities.OccSpaceType;
+import com.tcvcog.tcvce.entities.occupancy.OccSpaceType;
 
 import java.io.Serializable;
 //imported when adding  and @ViewScoped
@@ -54,24 +54,26 @@ public class SpaceTypeBB extends BackingBeanUtils implements Serializable {
     /**
      * @return the spaceTypeList
      */
-    public ArrayList<OccSpaceType> getSpaceTypeList() {
+    public List<OccSpaceType> getSpaceTypeList() {
+        OccInspectionIntegrator si = getOccInspectionIntegrator();
         
-        try {
-            ChecklistIntegrator si = getChecklistIntegrator();
-            spaceTypeList = si.getSpaceTypeList();
-        } catch (IntegrationException ex) {
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                        "Unable to load space type list", 
-                        "This must be corrected by the System Administrator"));
-        }
-         if(spaceTypeList != null){
-            return spaceTypeList;
-            
-        } else {
-            spaceTypeList = new ArrayList();
-            return spaceTypeList;
-        }
+//        try {
+////            spaceTypeList = si.getSpa();
+//        } catch (IntegrationException ex) {
+//            getFacesContext().addMessage(null,
+//                new FacesMessage(FacesMessage.SEVERITY_ERROR, 
+//                        "Unable to load space type list", 
+//                        "This must be corrected by the System Administrator"));
+//        }
+//         if(spaceTypeList != null){
+//            return spaceTypeList;
+//            
+//        } else {
+//            spaceTypeList = new ArrayList();
+//            return spaceTypeList;
+//        }
+
+        return new ArrayList<>();
     }
 
     /**

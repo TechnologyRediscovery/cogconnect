@@ -3,11 +3,12 @@ package com.tcvcog.tcvce.application;
 
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
+import com.tcvcog.tcvce.entities.Blob;
+import com.tcvcog.tcvce.entities.BlobType;
 import com.tcvcog.tcvce.entities.CEActionRequest;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
-import com.tcvcog.tcvce.entities.Photograph;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.PropertyWithLists;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
@@ -23,6 +24,7 @@ import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.component.UIInput;
 import javax.faces.event.ActionEvent;
+import org.primefaces.event.FileUploadEvent;
 
 /*
  * Copyright (C) 2018 Turtle Creek Valley
@@ -76,11 +78,11 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     public void initBean(){
         PropertyIntegrator pi = getPropertyIntegrator();
         try {
-            this.currProp = pi.getPropertyWithLists(getSessionBean().getPropertyQueue().get(0).getPropertyID());
+            this.currProp = pi.getPropertyWithLists(getSessionBean().getSessionPropertyList().get(0).getPropertyID());
         } catch (IntegrationException | CaseLifecyleException ex) {
             System.out.println(ex);
         }
-        propList = getSessionBean().getPropertyQueue();
+        propList = getSessionBean().getSessionPropertyList();
     }
 
     public void searchForProperties(ActionEvent event){
@@ -88,7 +90,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         PropertyIntegrator pi = getPropertyIntegrator();
         
         try {
-            setPropList(pi.searchForProperties(getHouseNum(), getStreetName(), getSessionBean().getActiveMuni().getMuniCode()));
+            setPropList(pi.searchForProperties(getHouseNum(), getStreetName(), getSessionBean().getSessionMuni().getMuniCode()));
             getFacesContext().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO, 
                         "Your search completed with " + getPropList().size() + " results", ""));
@@ -112,7 +114,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     }
     
     public String openCECase(){
-        getSessionBean().setActiveProp(currProp);
+        getSessionBean().setSessionProperty(currProp);
         return "addNewCase";
     }
     
@@ -123,9 +125,8 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     
     
     
-    
     public String viewPersonProfile(Person p){
-        getSessionBean().getPersonQueue().add(0,p);
+        getSessionBean().getSessionPersonList().add(0,p);
         return "persons";
     }
     
@@ -134,8 +135,8 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         UserIntegrator ui = getUserIntegrator();
         try {
             currProp = pi.getPropertyWithLists(prop.getPropertyID());
-            ui.logObjectView(getSessionBean().getFacesUser(), prop);
-            getSessionBean().getPropertyQueue().add(prop);
+            ui.logObjectView(getSessionBean().getSessionUser(), prop);
+            getSessionBean().getSessionPropertyList().add(prop);
             
         } catch (IntegrationException | CaseLifecyleException ex) {
             System.out.println(ex);
@@ -149,12 +150,37 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         PropertyIntegrator pi = getPropertyIntegrator();
         try {
             if(currProp == null){
-                currProp = pi.getPropertyWithLists(getSessionBean().getActiveProp().getPropertyID());
+                currProp = pi.getPropertyWithLists(getSessionBean().getSessionProperty().getPropertyID());
             }
         } catch (IntegrationException | CaseLifecyleException ex) {
             System.out.println(ex);
         }
         return currProp;
+    }
+    
+    /**
+     *delete blob if the blob is a photo
+     * @param blobID
+     */
+    public void deletePhoto(int blobID){
+        try {
+            Blob blob = getBlobCoordinator().getBlob(blobID);
+            if(blob.getType() == BlobType.PHOTO){
+                getBlobCoordinator().deleteBlob(blobID);
+            }
+            }
+        catch (IntegrationException ex) {
+            System.out.println(ex);
+        }
+    }
+    
+    public void handleFileUpload(FileUploadEvent ev){
+        Blob blob = getBlobCoordinator().getNewBlob();
+        blob.setBytes(ev.getFile().getContents());
+        blob.setType(BlobType.PHOTO); // TODO: BAD CHANGE THIS SOON
+        
+        // DO nothing because I'm moving on to other issues,
+        // need to be able to compile before I can do much in the way of testing
     }
     
     /**
@@ -165,7 +191,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     }
     
     public String updateProperty(){
-        getSessionBean().getPropertyQueue().add(0, currProp);
+        getSessionBean().getSessionPropertyList().add(0, currProp);
         return "propertyUpdate";
         
     }
@@ -283,7 +309,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
     /**
      * @param propList the propList to set
      */
-    public void setPropList(ArrayList<Property> propList) {
+    public void setPropList(List<Property> propList) {
         this.propList = propList;
     }
 
@@ -319,7 +345,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         this.filteredPersonList = filteredPersonList;
     }
 
-    
+
 
     /**
      * @return the selectedMuni
