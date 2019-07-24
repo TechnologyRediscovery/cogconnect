@@ -35,7 +35,7 @@ ALTER TABLE muniprofile ADD COLUMN minimumuserranktodeclarerentalintent INTEGER 
 ALTER TABLE propertyunit DROP COLUMN rentalintent;
 ALTER TABLE propertyunit ADD COLUMN rentalnotes TEXT;
 
-ALTER TABLE occinspeection ADD COLUMN effectivedate TIMESTAMP WITH TIME ZONE;
+ALTER TABLE occinspection ADD COLUMN effectivedate TIMESTAMP WITH TIME ZONE;
 
 
 
@@ -198,7 +198,6 @@ DROP TABLE personsource CASCADE;
 
 ALTER TABLE person ADD COLUMN bobsource_sourceid INTEGER CONSTRAINT person_bobsourceid_fk REFERENCES bobsource (sourceid);
 ALTER TABLE property ADD COLUMN bobsource_sourceid INTEGER CONSTRAINT property_bobsourceid_fk REFERENCES bobsource (sourceid);
-ALTER TABLE property ADD COLUMN bobsource_sourceid INTEGER CONSTRAINT property_bobsourceid_fk REFERENCES bobsource (sourceid);
 
 
 
@@ -253,7 +252,7 @@ CREATE TABLE public.propertystatus
 
 );
 
-ALTER TABLE property DROP COLUMN status_statusid;
+ALTER TABLE property DROP COLUMN IF EXISTS status_statusid;
 
 
 ALTER TABLE property ADD COLUMN status_statusid INTEGER CONSTRAINT property_statusid_fk REFERENCES propertystatus (statusid);
