@@ -26,7 +26,7 @@ import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.domain.ViolationException;
 import com.tcvcog.tcvce.entities.CECase;
 import com.tcvcog.tcvce.entities.CodeViolation;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.EventCategory;
 import com.tcvcog.tcvce.util.Constants;
 import com.tcvcog.tcvce.util.MessageBuilderParams;
@@ -61,8 +61,8 @@ public class ViolationEditBB extends BackingBeanUtils implements Serializable{
     @PostConstruct
     public void initBean(){
         
-         currentViolation = getSessionBean().getActiveCodeViolation();
-         currentCase = getSessionBean().getcECaseQueue().get(0);
+         currentViolation = getSessionBean().getSessionCodeViolation();
+         currentCase = getSessionBean().getSessionCECaseList().get(0);
          formDiscloseToMuni = true;
          formDiscloseToPublic = true;
     }
@@ -74,7 +74,7 @@ public class ViolationEditBB extends BackingBeanUtils implements Serializable{
        EventCategory ec = eventCoordinator.getInitiatlizedEventCategory(
                Integer.parseInt(getResourceBundle(Constants.EVENT_CATEGORY_BUNDLE).getString("updateViolationEventCategoryID")));
        
-       EventCECase event = eventCoordinator.getInitializedEvent(getCurrentCase(), ec);
+       CECaseEvent event = eventCoordinator.getInitializedEvent(getCurrentCase(), ec);
         
         // load up edit event data
         event.setNotes(formEventNotes);
@@ -84,12 +84,12 @@ public class ViolationEditBB extends BackingBeanUtils implements Serializable{
         MessageBuilderParams mcc = new MessageBuilderParams();
         mcc.existingContent = currentViolation.getNotes();
         mcc.newMessageContent = formEventNotes;
-        mcc.user = getSessionBean().getFacesUser();
+        mcc.user = getSessionBean().getSessionUser();
         currentViolation.setNotes(appendNoteBlock(mcc));
         
         try {
             
-             cc.updateCodeViolation(currentCase, currentViolation, getSessionBean().getFacesUser());
+             cc.updateCodeViolation(currentCase, currentViolation, getSessionBean().getSessionUser());
              
              // if update succeeds without throwing an error, then generate an
              // update violation event

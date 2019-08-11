@@ -1,21 +1,10 @@
-BEGIN;
-
-/*Add applicant flag for case when applicant is not a required or optional person on 
-an occupancy permit application */
-
-ALTER TABLE occpermitapplicationperson
-ADD COLUMN applicant boolean,
-ADD COLUMN preferredcontact boolean,
-
--- What should our default value be here? This table is probably empty in production, so this may be nonissue
-ADD COLUMN applicationpersontype persontype DEFAULT 'LegacyOwner' NOT NULL;
 
 
 -- Add optionalpersontypes to occpermitapplicationreason
 
 ALTER TABLE occpermitapplicationreason
 ADD COLUMN optionalpersontypes persontype[],
-ADD COLUMN personfriendlydescription text;
+ADD COLUMN humanfriendlydescription text;
 
 -- Populate optionalpersontypes 
 
@@ -37,7 +26,7 @@ WHERE reasonid = '1';
 -- Add person friendly descriptions
 
 UPDATE occpermitapplicationreason
-SET personfriendlydescription = description.descriptiontext
+SET humanfriendlydescription = description.descriptiontext
 FROM (VALUES 
 	(1, 'An owner must be added to an occupancy permit application for a new rental property. Optionally, a property manager and the tenants who will be renting the property can also be added.'),
 	(2, 'Both the current owner and future owner must be added to an occupancy permit application that is being created due to the sale of a property.'),
@@ -51,5 +40,11 @@ DROP COLUMN currentowner_personid,
 DROP COLUMN contactperson_personid,
 DROP COLUMN newowner_personid;
 
-COMMIT;
+
+
+
+
+INSERT INTO public.dbpatch(
+            patchnum, patchfilename, datepublished, patchauthor, notes)
+    VALUES (13, 'database/patches/dbpatch_beta13.sql', '05-30-2019', 'ecd', 'final clean ups');
 

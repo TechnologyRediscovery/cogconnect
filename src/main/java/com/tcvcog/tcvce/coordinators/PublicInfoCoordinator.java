@@ -10,7 +10,7 @@ import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CEActionRequest;
 import com.tcvcog.tcvce.entities.CECase;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.PublicInfoBundle;
 import com.tcvcog.tcvce.entities.PublicInfoBundleCEActionRequest;
 import com.tcvcog.tcvce.entities.PublicInfoBundleCECase;
@@ -111,8 +111,8 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
             pib.setCaseManagerContact(c.getCaseManager().getPerson().getPhoneWork());
             
             
-            pib.setPublicEventList(new ArrayList<EventCECase>());
-            for(EventCECase ev: c.getVisibleEventList()){
+            pib.setPublicEventList(new ArrayList<CECaseEvent>());
+            for(CECaseEvent ev: c.getVisibleEventList()){
                 if(ev.isDiscloseToPublic()){
                     pib.getPublicEventList().add(ev);
                 }
@@ -185,7 +185,7 @@ public class PublicInfoCoordinator extends BackingBeanUtils implements Serializa
             pib.setShowDetailsPageButton(false);
         } else {
             pib.setPaccStatusMessage("A public information bundle was found but public "
-                    + "access was switched off by a code officer. Please contact your municipal office at " + req.getMuni().getPhone());
+                    + "access was switched off by a code officer. Please contact your municipal office. ");
             
         }
         

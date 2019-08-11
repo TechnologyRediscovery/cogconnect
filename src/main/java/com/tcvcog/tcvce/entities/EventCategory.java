@@ -37,13 +37,16 @@ public class EventCategory implements Serializable {
     
     private boolean notifycasemonitors;
     
-    private CasePhaseChangeRule casePhaseChangeRule;
+    private Directive directive;
     
     private boolean hidable;
-    private boolean requestable;
     
     private Icon icon;
-
+    
+    private int relativeOrderWithinType;
+    private int relativeOrderGlobal;
+    private String hostEventDescriptionSuggestedText;
+    
     /**
      * @return the eventType
      */
@@ -227,32 +230,62 @@ public class EventCategory implements Serializable {
         this.icon = icon;
     }
 
+
+
     /**
-     * @return the requestable
+     * @return the directive
      */
-    public boolean isRequestable() {
-        return requestable;
+    public Directive getDirective() {
+        return directive;
     }
 
     /**
-     * @param requestable the requestable to set
+     * @param directive the directive to set
      */
-    public void setRequestable(boolean requestable) {
-        this.requestable = requestable;
+    public void setDirective(Directive directive) {
+        this.directive = directive;
     }
 
     /**
-     * @return the casePhaseChangeRule
+     * @return the relativeOrderWithinType
      */
-    public CasePhaseChangeRule getCasePhaseChangeRule() {
-        return casePhaseChangeRule;
+    public int getRelativeOrderWithinType() {
+        return relativeOrderWithinType;
     }
 
     /**
-     * @param casePhaseChangeRule the casePhaseChangeRule to set
+     * @return the relativeOrderGlobal
      */
-    public void setCasePhaseChangeRule(CasePhaseChangeRule casePhaseChangeRule) {
-        this.casePhaseChangeRule = casePhaseChangeRule;
+    public int getRelativeOrderGlobal() {
+        return relativeOrderGlobal;
+    }
+
+    /**
+     * @return the hostEventDescriptionSuggestedText
+     */
+    public String getHostEventDescriptionSuggestedText() {
+        return hostEventDescriptionSuggestedText;
+    }
+
+    /**
+     * @param relativeOrderWithinType the relativeOrderWithinType to set
+     */
+    public void setRelativeOrderWithinType(int relativeOrderWithinType) {
+        this.relativeOrderWithinType = relativeOrderWithinType;
+    }
+
+    /**
+     * @param relativeOrderGlobal the relativeOrderGlobal to set
+     */
+    public void setRelativeOrderGlobal(int relativeOrderGlobal) {
+        this.relativeOrderGlobal = relativeOrderGlobal;
+    }
+
+    /**
+     * @param hostEventDescriptionSuggestedText the hostEventDescriptionSuggestedText to set
+     */
+    public void setHostEventDescriptionSuggestedText(String hostEventDescriptionSuggestedText) {
+        this.hostEventDescriptionSuggestedText = hostEventDescriptionSuggestedText;
     }
 
     

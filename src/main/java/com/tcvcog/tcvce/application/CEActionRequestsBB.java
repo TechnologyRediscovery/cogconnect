@@ -7,6 +7,7 @@ package com.tcvcog.tcvce.application;
 
 import com.tcvcog.tcvce.coordinators.SearchCoordinator;
 import com.tcvcog.tcvce.coordinators.CaseCoordinator;
+import com.tcvcog.tcvce.coordinators.DataCoordinator;
 import com.tcvcog.tcvce.domain.AuthorizationException;
 import com.tcvcog.tcvce.domain.CaseLifecyleException;
 import com.tcvcog.tcvce.domain.IntegrationException;
@@ -98,35 +99,68 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
     @PostConstruct
     public void initBean() {
-        SearchCoordinator sc = getSearchCoordinator();
-
-        QueryCEAR sessionQuery = getSessionBean().getSessionQueryCEAR();
-
-        selectedRequest = getSessionBean().getSessionCEAR();
-
+//        SearchCoordinator sc = getSearchCoordinator();
+//
+//        QueryCEAR sessionQuery = getSessionBean().getSessionQueryCEAR();
+//
+//        selectedRequest = getSessionBean().getSessionCEAR();
+//
+//        try {
+//            requestList = sc.runQuery(sessionQuery).getResults();
+//            if (selectedRequest == null && requestList.size() > 0) {
+//                selectedRequest = requestList.get(0);
+//                generateCEARReasonDonutModel();
+//            }
+//            selectedQueryCEAR = sessionQuery;
+//            searchParams = sessionQuery.getParmsList().get(0);
+//            queryList = sc.buildQueryCEARList(getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
+//        } catch (IntegrationException | AuthorizationException ex) {
+//            System.out.println(ex);
+//            getFacesContext().addMessage(null,
+//                    new FacesMessage(FacesMessage.SEVERITY_ERROR, ex.getMessage(), ""));
+//        }
+        
+        
+         CaseCoordinator cc = getCaseCoordinator();
+        SearchCoordinator searchCoord = getSearchCoordinator();
+        ReportCEARList rpt = cc.getInitializedReportConficCEARs(
+                getSessionBean().getSessionUser(), getSessionBean().getSessionMuni());
+        rpt.setPrintFullCEARQueue(false);
         try {
-            requestList = sc.runQuery(sessionQuery).getResults();
-            if (selectedRequest == null && requestList.size() > 0) {
-                selectedRequest = requestList.get(0);
-                generateCEARReasonDonutModel();
-            }
-            selectedQueryCEAR = sessionQuery;
-            searchParams = sessionQuery.getParmsList().get(0);
-            queryList = sc.buildQueryCEARList(getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
-        } catch (IntegrationException | AuthorizationException ex) {
+            QueryCEAR query = searchCoord.assembleQueryCEAR(
+                                                QueryCEAREnum.CUSTOM, 
+                                                getSessionBean().getSessionUser(), 
+                                                getSessionBean().getSessionMuni(), 
+                                                null);
+            List<CEActionRequest> singleReqList = new ArrayList<>();
+            selectedRequest.setInsertPageBreakBefore(false);
+            singleReqList.add(selectedRequest);
+            query.addToResults(singleReqList);
+            query.setExecutionTimestamp(LocalDateTime.now());
+            rpt.setBOBQuery(query);
+            rpt.setGenerationTimestamp(LocalDateTime.now());
+            rpt.setTitle("Code enforcement request");
+        } catch (IntegrationException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, ex.getMessage(), ""));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                             "Unable to build query, sorry!", ""));
+            
         }
+        
+        reportConfig = rpt;
+        
     }
 
     private void generateCEARReasonDonutModel() {
+        DataCoordinator dc = getDataCoordinator();
+        
         if(requestList != null && requestList.size() > 0){
 
             CaseCoordinator cc = getCaseCoordinator();
             DonutChartModel donut =  new DonutChartModel();
 
-            donut.addCircle(cc.computeCountsByCEARReason(requestList));
+            donut.addCircle(dc.computeCountsByCEARReason(requestList));
 
             donut.setTitle("Requests by reason");
             donut.setLegendPosition("nw");
@@ -166,8 +200,8 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
             
             selectedQueryCEAR = searchCoord.assembleQueryCEAR(
                                                     QueryCEAREnum.CUSTOM,
-                                                    getSessionBean().getFacesUser(), 
-                                                    getSessionBean().getActiveMuni(), 
+                                                    getSessionBean().getSessionUser(), 
+                                                    getSessionBean().getSessionMuni(), 
                                                     searchParams);
             requestList =searchCoord.runQuery(selectedQueryCEAR).getResults();
             
@@ -194,7 +228,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         SearchCoordinator searchCoord = getSearchCoordinator();
         
         ReportCEARList rpt = cc.getInitializedReportConficCEARs(
-                getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
+                getSessionBean().getSessionUser(), getSessionBean().getSessionMuni());
         
         rpt.setPrintFullCEARQueue(true);
         if (selectedQueryCEAR != null) {
@@ -214,46 +248,10 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         reportConfig = rpt;
     }
     
-    /**
-     *
-     * @param ev
-     */
-    public void prepareReportSingleCEAR(ActionEvent ev) {
-        CaseCoordinator cc = getCaseCoordinator();
-        SearchCoordinator searchCoord = getSearchCoordinator();
-        ReportCEARList rpt = cc.getInitializedReportConficCEARs(
-                getSessionBean().getFacesUser(), getSessionBean().getActiveMuni());
-        rpt.setPrintFullCEARQueue(false);
-        try {
-            QueryCEAR query = searchCoord.assembleQueryCEAR(
-                                                QueryCEAREnum.CUSTOM, 
-                                                getSessionBean().getFacesUser(), 
-                                                getSessionBean().getActiveMuni(), 
-                                                null);
-            List<CEActionRequest> singleReqList = new ArrayList<>();
-            selectedRequest.setInsertPageBreakBefore(false);
-            singleReqList.add(selectedRequest);
-            query.addToResults(singleReqList);
-            query.setExecutionTimestamp(LocalDateTime.now());
-            rpt.setBOBQuery(query);
-            rpt.setGenerationTimestamp(LocalDateTime.now());
-            rpt.setTitle("Code enforcement request");
-        } catch (IntegrationException ex) {
-            System.out.println(ex);
-            getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                             "Unable to build query, sorry!", ""));
-            
-        }
-        
-        reportConfig = rpt;
-
-    }
-
     public String generateReportSingleCEAR() {
         getSessionBean().setSessionCEAR(selectedRequest);
         getSessionBean().setSessionReport(reportConfig);
-        getSessionBean().setSessionQueryCEAR(selectedQueryCEAR);
+        getSessionBean().setQueryCEAR(selectedQueryCEAR);
         return "reportCEARList";
 
     }
@@ -267,7 +265,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         reportConfig.getBOBQuery().getBOBResultList().get(0).setInsertPageBreakBefore(false);
         
         getSessionBean().setSessionReport(reportConfig);
-        getSessionBean().setSessionQueryCEAR(selectedQueryCEAR);
+        getSessionBean().setQueryCEAR(selectedQueryCEAR);
         return "reportCEARList";
     }
 
@@ -276,11 +274,11 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
         if (selectedRequest != null) {
             if (selectedRequest.getRequestProperty() != null) {
-                getSessionBean().setActiveProp(selectedRequest.getRequestProperty());
+                getSessionBean().setSessionProperty(selectedRequest.getRequestProperty());
             }
 
             MessageBuilderParams mbp = new MessageBuilderParams();
-            mbp.user = getFacesUser();
+            mbp.user = getSessionUser();
             mbp.existingContent = selectedRequest.getPublicExternalNotes();
             mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("attachedToCaseHeader");
             mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("attachedToCaseExplanation");
@@ -317,7 +315,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         selectedCaseForAttachment = c;
         try {
-            ceari.connectActionRequestToCECase(selectedRequest.getRequestID(), selectedCaseForAttachment.getCaseID(), getFacesUser().getUserID());
+            ceari.connectActionRequestToCECase(selectedRequest.getRequestID(), selectedCaseForAttachment.getCaseID(), getSessionUser().getUserID());
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
                     "Successfully connected action request ID " + selectedRequest.getRequestID()
                     + " to code enforcement case ID " + selectedCaseForAttachment.getCaseID(), ""));
@@ -341,7 +339,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
             // build message to document change
             MessageBuilderParams mcc = new MessageBuilderParams();
-            mcc.user = getFacesUser();
+            mcc.user = getSessionUser();
             mcc.existingContent = selectedRequest.getPublicExternalNotes();
             mcc.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("invalidActionRequestHeader");
             mcc.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("invalidActionRequestExplanation");
@@ -375,7 +373,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
             // build message to document change
             MessageBuilderParams mbp = new MessageBuilderParams();
-            mbp.user = getFacesUser();
+            mbp.user = getSessionUser();
             mbp.existingContent = selectedRequest.getPublicExternalNotes();
             mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("noViolationFoundHeader");
             mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("noViolationFoundExplanation");
@@ -480,7 +478,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         }
 
         MessageBuilderParams mbp = new MessageBuilderParams();
-        mbp.user = getFacesUser();
+        mbp.user = getSessionUser();
         mbp.existingContent = selectedRequest.getPublicExternalNotes();
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("propertyChangedHeader");
         mbp.explanation = getResourceBundle(Constants.MESSAGE_TEXT).getString("propertyChangedExplanation");
@@ -548,7 +546,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
-        mbp.user = getFacesUser();
+        mbp.user = getSessionUser();
         mbp.existingContent = selectedRequest.getCogInternalNotes();
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("internalNote");
         mbp.explanation = "";
@@ -573,7 +571,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
-        mbp.user = getFacesUser();
+        mbp.user = getSessionUser();
         mbp.existingContent = selectedRequest.getMuniNotes();
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("muniNote");
         mbp.explanation = "";
@@ -597,7 +595,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
 
         CEActionRequestIntegrator ceari = getcEActionRequestIntegrator();
         MessageBuilderParams mbp = new MessageBuilderParams();
-        mbp.user = getFacesUser();
+        mbp.user = getSessionUser();
         mbp.existingContent = selectedRequest.getPublicExternalNotes();
         mbp.header = getResourceBundle(Constants.MESSAGE_TEXT).getString("externalNote");
         mbp.explanation = "";
@@ -616,20 +614,19 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         }
 
     }
-
-    public void deletePhoto(int photoID) {
+    
+    public void deletePhoto(int blobID){
         // TODO: remove entry from linker tbale for deleted photos
-        for (Integer pid : this.selectedRequest.getPhotoList()) {
-            if (pid.compareTo(photoID) == 0) {
-                this.selectedRequest.getPhotoList().remove(pid);
+        for(Integer bid : this.selectedRequest.getBlobIDList()){
+            if(bid.compareTo(blobID) == 0){
+                this.selectedRequest.getBlobIDList().remove(bid);
                 break;
             }
         }
-        ImageServices is = getImageServices();
         try {
-            is.deletePhotograph(photoID);
+            getBlobCoordinator().deleteBlob(blobID);
         } catch (IntegrationException ex) {
-            System.out.println("CEActionRequessBB.deletePhotograph | " + ex);
+            System.out.println(ex);
         }
     }
 
@@ -838,7 +835,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
         disabledDueToRoutingNotAllowed
                 = !(cc.determineCEActionRequestRoutingActionEnabledStatus(
                         selectedRequest,
-                        getSessionBean().getFacesUser()));
+                        getSessionBean().getSessionUser()));
 
         return disabledDueToRoutingNotAllowed;
     }
@@ -968,7 +965,7 @@ public class CEActionRequestsBB extends BackingBeanUtils implements Serializable
      */
     public boolean isDisablePACCControl() {
         disablePACCControl = false;
-        if (getSessionBean().getFacesUser().getKeyCard().isHasMuniStaffPermissions() == false) {
+        if (getSessionBean().getSessionUser().getKeyCard().isHasMuniStaffPermissions() == false) {
             disablePACCControl = true;
         }
         return disablePACCControl;

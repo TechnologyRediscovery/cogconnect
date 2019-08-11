@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 import javax.faces.event.ActionEvent;
@@ -43,7 +44,7 @@ import javax.faces.event.ActionEvent;
  */
 public class UnitChangesBB extends BackingBeanUtils implements Serializable {
 
-    private ArrayList<Property> changedPropList;
+    private List<Property> changedPropList;
     private Municipality selectedMuni;
 
     private String houseNum;
@@ -51,16 +52,16 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
     private Property selectedProperty;
     private PropertyWithLists propWithLists;
 
-    private ArrayList<PropertyUnit> existingUnitList;
-    private ArrayList<PropertyUnitChange> proposedUnitList;
+    private List<PropertyUnit> existingUnitList;
+    private List<PropertyUnitChange> proposedUnitList;
     private Person existingOwner;
     private Person proposedOwner;
-    private ArrayList<ChangeOrderAction> actionList;
+    private List<ChangeOrderAction> actionList;
 
     @PostConstruct
     public void initBean() {
 
-        Property activeProp = getSessionBean().getActiveProp();
+        Property activeProp = getSessionBean().getSessionProperty();
 
         actionList = new ArrayList<>();
         
@@ -98,7 +99,7 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
         PropertyIntegrator pi = getPropertyIntegrator();
 
         try {
-            setChangedPropList(pi.searchForChangedProperties(getHouseNum(), getStreetName(), getSessionBean().getActiveMuni().getMuniCode()));
+            setChangedPropList(pi.searchForChangedProperties(getHouseNum(), getStreetName(), getSessionBean().getSessionMuni().getMuniCode()));
             getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
                             "Your search completed with " + getChangedPropList().size() + " results", ""));
@@ -117,8 +118,8 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
             selectedProperty = pi.getPropertyWithLists(prop.getPropertyID());
             existingUnitList = pi.getPropertyUnitList(selectedProperty);
             proposedUnitList = pi.getPropertyUnitChangeList(selectedProperty);
-            ui.logObjectView(getSessionBean().getFacesUser(), prop);
-            getSessionBean().getPropertyQueue().add(prop);
+            ui.logObjectView(getSessionBean().getSessionUser(), prop);
+            getSessionBean().getSessionPropertyList().add(prop);
 
         } catch (IntegrationException | CaseLifecyleException ex) {
             System.out.println(ex);
@@ -133,7 +134,7 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
 
                 if (change.getAction() == ChangeOrderAction.Accept) {
 
-                    change.setApprovedBy(getSessionBean().getFacesUser().getUserID());
+//                    change.setApprovedBy(getSessionBean().getFacesUser().getUserID());
                     change.setApprovedOn(Timestamp.valueOf(LocalDateTime.now()));
 
                     if (change.isAdded()) {
@@ -148,11 +149,11 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
                                 " [Removed on " + change.getChangedOn().toGMTString()
                                 + " by " + change.getChangedBy() + "]"));
 
-                        pi.updatePropertyUnit(change);
+                        pi.implementPropertyUnitChangeOrder(change);
 
                     } else {
 
-                        pi.updatePropertyUnit(change);
+                        pi.implementPropertyUnitChangeOrder(change);
 
                     }
 
@@ -160,10 +161,10 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
                     
                 } else if (change.getAction() == ChangeOrderAction.Reject) {
                     
-                    change.setApprovedBy(getSessionBean().getFacesUser().getUserID());
-                    
-                    change.setInactive(Timestamp.valueOf(LocalDateTime.now()));
-                    
+//                    change.setApprovedBy(getSessionBean().getFacesUser().getUserID());
+//                    
+//                    change.setInactive(Timestamp.valueOf(LocalDateTime.now()));
+//                    
                     pi.updatePropertyUnitChange(change);
                     
                 }
@@ -178,17 +179,17 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
 
     public String goToChangeDetail() {
 
-        getSessionBean().setActiveProp(selectedProperty);
+        getSessionBean().setSessionProperty(selectedProperty);
 
         return "unitchangedetail";
 
     }
 
-    public ArrayList<Property> getChangedPropList() {
+    public List<Property> getChangedPropList() {
         return changedPropList;
     }
 
-    public void setChangedPropList(ArrayList<Property> changedPropList) {
+    public void setChangedPropList(List<Property> changedPropList) {
         this.changedPropList = changedPropList;
     }
 
@@ -232,19 +233,19 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
         this.propWithLists = propWithLists;
     }
 
-    public ArrayList<PropertyUnit> getExistingUnitList() {
+    public List<PropertyUnit> getExistingUnitList() {
         return existingUnitList;
     }
 
-    public void setExistingUnitList(ArrayList<PropertyUnit> existingUnitList) {
+    public void setExistingUnitList(List<PropertyUnit> existingUnitList) {
         this.existingUnitList = existingUnitList;
     }
 
-    public ArrayList<PropertyUnitChange> getProposedUnitList() {
+    public List<PropertyUnitChange> getProposedUnitList() {
         return proposedUnitList;
     }
 
-    public void setProposedUnitList(ArrayList<PropertyUnitChange> proposedUnitList) {
+    public void setProposedUnitList(List<PropertyUnitChange> proposedUnitList) {
         this.proposedUnitList = proposedUnitList;
     }
 
@@ -264,7 +265,7 @@ public class UnitChangesBB extends BackingBeanUtils implements Serializable {
         this.proposedOwner = proposedOwner;
     }
 
-    public ArrayList<ChangeOrderAction> getActionList() {
+    public List<ChangeOrderAction> getActionList() {
         return actionList;
     }
 

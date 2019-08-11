@@ -18,6 +18,7 @@ Council of Governments, PA
 package com.tcvcog.tcvce.entities;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,65 @@ public class PropertyWithLists extends Property implements Serializable{
     private List<PropertyUnit> unitList;
     // both are connected to Person objects all over the place
     private List<Person> personList;
+    private List<CECase> infoCaseList;
+    private List<PropertyUnitChange> changeList;
+    private List<Integer> blobList;
+    
+    public PropertyWithLists(){
+        
+    }
 
+    public PropertyWithLists(Property prop){
+        this.propertyID = prop.getPropertyID();
+        this.muni = prop.getMuni();
+        this.muniCode = prop.getMuniCode();
+        this.parID = prop.getParID();
+        this.lotAndBlock = prop.getLotAndBlock();
+        this.address = prop.getAddress();
+
+        this.useTypeString = prop.getUseTypeString();
+        this.useGroup = prop.getUseGroup();
+        this.constructionType = prop.getConstructionType();
+        this.countyCode = prop.getCountyCode();
+
+        this.notes = prop.getNotes();
+        this.address_city = prop.getAddress_city();
+        this.address_state = prop.getAddress_state();
+        this.address_zip = prop.address_zip;
+
+        this.ownerCode = prop.getOwnerCode();
+        this.propclass = prop.getPropclass();
+
+        this.lastUpdatedTS = prop.getLastUpdatedTS();
+        this.lastUpdatedBy = prop.getLastUpdatedBy();
+        this.locationDescriptor = prop.getLocationDescriptor();
+
+        this.bobSource = prop.getBobSource();
+        this.unfitDateStart = prop.getUnfitDateStart();
+        this.unfitDateStop = prop.getUnfitDateStop();
+        this.unfitBy = prop.getUnfitBy();
+
+        this.abandonedDateStart = prop.getAbandonedDateStart();
+        this.abandonedDateStop = prop.getAbandonedDateStop();
+        this.abandonedBy = prop.getAbandonedBy();
+        this.vacantDateStart = prop.getVacantDateStart();
+
+        this.vacantDateStop = prop.getVacantDateStop();
+        this.vacantBy = prop.getVacantBy();
+        this.conditionIntensityClassID = prop.getConditionIntensityClassID();
+
+        this.landBankProspectIntensityClassID = prop.getLandBankProspectIntensityClassID();
+        this.LandBankHeld = prop.isLandBankHeld();
+        this.active = prop.isActive();
+        this.nonAddressable = prop.isNonAddressable();
+        
+        this.useTypeID = prop.getUseTypeID();
+        this.useTypeString = prop.getUseTypeString();
+        
+        
+    }
+    
+    
     /**
      * @return the ceCaseList
      */
@@ -74,6 +133,48 @@ public class PropertyWithLists extends Property implements Serializable{
      */
     public void setPersonList(List<Person> personList) {
         this.personList = personList;
+    }
+
+    /**
+     * @return the infoCaseList
+     */
+    public List getInfoCaseList() {
+        return infoCaseList;
+    }
+
+    /**
+     * @param infoCaseList the infoCaseList to set
+     */
+    public void setInfoCaseList(List<CECase> infoCaseList) {
+        this.infoCaseList = infoCaseList;
+    }
+
+    /**
+     * @return the changeList
+     */
+    public List getChangeList() {
+        return changeList;
+    }
+
+    /**
+     * @param changeList the changeList to set
+     */
+    public void setChangeList(List<PropertyUnitChange> changeList) {
+        this.changeList = changeList;
+    }
+
+    /**
+     * @return the blobList
+     */
+    public List getBlobList() {
+        return blobList;
+    }
+
+    /**
+     * @param blobList the blobList to set
+     */
+    public void setBlobList(List<Integer> blobList) {
+        this.blobList = blobList;
     }
     
 }

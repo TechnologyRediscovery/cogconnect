@@ -20,13 +20,19 @@ import com.tcvcog.tcvce.application.BackingBeanUtils;
 import com.tcvcog.tcvce.coordinators.SessionSystemCoordinator;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.Citation;
-import com.tcvcog.tcvce.entities.EventCECase;
+import com.tcvcog.tcvce.entities.Event;
+import com.tcvcog.tcvce.entities.CECaseEvent;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
+import com.tcvcog.tcvce.entities.PersonOccPeriod;
 import com.tcvcog.tcvce.entities.PersonType;
 import com.tcvcog.tcvce.entities.Property;
 import com.tcvcog.tcvce.entities.User;
-import com.tcvcog.tcvce.entities.search.SearchParamsPersons;
+import com.tcvcog.tcvce.entities.search.SearchParamsPerson;
+import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
+import com.tcvcog.tcvce.entities.search.QueryOccPeriod;
+import com.tcvcog.tcvce.entities.search.QueryPerson;
+import com.tcvcog.tcvce.entities.search.SearchParamsOccPeriod;
 import com.tcvcog.tcvce.util.Constants;
 import java.io.Serializable;
 import java.sql.Connection;
@@ -151,7 +157,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
     private Person generatePersonFromResultSet(ResultSet rs) throws IntegrationException {
         // Instantiates the new person object
         Person newPerson = new Person();
-        SessionSystemCoordinator ssc = getSsCoordinator();
+        SessionSystemCoordinator ssc = getSessionSystemCoordinator();
         
         try {
             newPerson.setPersonID(rs.getInt("personid"));
@@ -216,6 +222,47 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         }
         return newPerson;
     } // close method
+    
+    public List<PersonOccPeriod> getPersonList(OccPeriod period) throws IntegrationException{
+        List<PersonOccPeriod> personList = new ArrayList<>();
+        String selectQuery =  "SELECT person_personid, applicant, preferredcontact, \n" +
+                                "   applicationpersontype\n" +
+                                "   FROM public.occperiodperson WHERE period_periodid=?;";
+
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = con.prepareStatement(selectQuery, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            stmt.setInt(1, period.getPeriodID());
+            rs = stmt.executeQuery();
+            while(rs.next()){
+                personList.add(generatePersonOccPeriod(rs));
+                
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("Unable to insert person and connect to property", ex);
+
+        } finally {
+           if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+           if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+           if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        } // close finally
+        
+        return personList;
+    }
+    
+    private PersonOccPeriod generatePersonOccPeriod(ResultSet rs) throws SQLException, IntegrationException{
+        PersonOccPeriod pop = new PersonOccPeriod(getPerson(rs.getInt("personid")));
+        pop.setApplicant(rs.getBoolean("applicant"));;
+        pop.setPreferredContact(rs.getBoolean("preferredcontact"));
+        pop.setApplicationPersonTppe(PersonType.valueOf(rs.getString("applicationpersontype")));
+        return pop;
+        
+    }
+    
 
     /**
      * Implements a basic person search by first and last name parts and returns
@@ -228,7 +275,7 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
      * @return the new Person() object generated from the query
      * @throws com.tcvcog.tcvce.domain.IntegrationException
      */
-    public ArrayList<Person> getPersonList(SearchParamsPersons params) throws IntegrationException {
+    public ArrayList<Person> getPersonList(SearchParamsPerson params) throws IntegrationException {
         Connection con = getPostgresCon();
         ArrayList<Person> personAL = new ArrayList<>();
         ResultSet rs = null;
@@ -510,14 +557,14 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
 
     } // close insertPerson()
 
-    public void connectPersonsToEvent(EventCECase ev, List<Person> personList) throws IntegrationException {
+    public void connectPersonsToEvent(CECaseEvent ev, List<Person> personList) throws IntegrationException {
         ListIterator li = personList.listIterator();
         while (li.hasNext()) {
             connectPersonToEvent(ev, (Person) li.next());
         }
     }
 
-    public void connectPersonToEvent(EventCECase ev, Person p) throws IntegrationException {
+    public void connectPersonToEvent(CECaseEvent ev, Person p) throws IntegrationException {
 
         String query = "INSERT INTO public.ceeventperson(\n"
                 + " ceevent_eventid, person_personid)\n"
@@ -760,6 +807,38 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         return list;
 
     }
+    
+    public List<Person> getPersonList(Event ev) throws IntegrationException {
+        Connection con = getPostgresCon();
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        List<Person> list = new ArrayList<>();
+
+        try {
+            String s = "SELECT person_personid FROM public.ceeventperson WHERE ceevent_eventid = ?;";
+            stmt = con.prepareStatement(s);
+            stmt.setInt(1, ev.getEventID());
+
+            rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                Person pers = getPerson(rs.getInt("person_personid"));
+                list.add(pers);
+            }
+
+        } catch (SQLException ex) {
+            System.out.println(ex.toString());
+            throw new IntegrationException("PersonIntegrator.getPerson | Unable to retrieve person", ex);
+        } finally {
+            if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
+            if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
+            if (rs != null) { try { rs.close(); } catch (SQLException ex) { /* ignored */ } }
+        } // close finally
+
+        return list;
+
+    }
+
 
     public List<Person> getPersonHistory(User u) throws IntegrationException {
         Connection con = getPostgresCon();
@@ -863,10 +942,17 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
 
     }
     
-    public ArrayList<Person> getPersonList(int propertyUnitID) throws IntegrationException{
+    
+    /**
+     * TODO: Finish!
+     * @param occPeriodID
+     * @return
+     * @throws IntegrationException 
+     */
+    public ArrayList<Person> getPersonList(int occPeriodID) throws IntegrationException{
         ArrayList<Person> personList = new ArrayList();
         String query =  "SELECT person_personid\n" +
-                        "  FROM public.propertyunitperson WHERE propertyunit_unitid=?;";
+                        "  FROM public.occperiodperson WHERE period_periodid=?;";
         
         Connection con = getPostgresCon();
         ResultSet rs = null;
@@ -874,14 +960,14 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
  
         try {
             stmt = con.prepareStatement(query);
-            stmt.setInt(1, propertyUnitID);
+            stmt.setInt(1, occPeriodID);
             rs = stmt.executeQuery();
             while(rs.next()){
                 personList.add(getPerson(rs.getInt("person_personid")));
             }
         } catch (SQLException ex) {
             System.out.println(ex.toString());
-            throw new IntegrationException("PropertyIntegrator.getProperty | Unable to retrieve property by ID number", ex);
+            throw new IntegrationException("PersonIntegrator | Unable to retrieve person list by occ period", ex);
         } finally{
              if (con != null) { try { con.close(); } catch (SQLException e) { /* ignored */} }
              if (stmt != null) { try { stmt.close(); } catch (SQLException e) { /* ignored */} }
@@ -961,7 +1047,8 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
         } // close finally
     }
     
-    public List<Person> queryPersons(SearchParamsPersons params) throws IntegrationException {
+    
+    public List<Person> searchForPersons(SearchParamsPerson params) throws IntegrationException {
         ArrayList<Person> personList = new ArrayList();
         Connection con = getPostgresCon();
         ResultSet rs = null;
@@ -1063,5 +1150,18 @@ public class PersonIntegrator extends BackingBeanUtils implements Serializable {
        
         return personList;
     }
+    
+    
+    public QueryPerson runQueryPerson(QueryPerson query) throws IntegrationException {
+        List<SearchParamsPerson> pList = query.getParmsList();
+        
+        for(SearchParamsPerson sp: pList){
+            query.addToResults(searchForPersons(sp));
+        }
+        query.setExecutionTimestamp(LocalDateTime.now());
+        query.setExecutedByIntegrator(true);
+        return query;
+    }
+
 
 } // close class

@@ -17,26 +17,33 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.entities;
 
-import com.tcvcog.tcvce.occupancy.entities.OccPermit;
-import com.tcvcog.tcvce.occupancy.entities.OccPermitApplication;
+import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
+import com.tcvcog.tcvce.entities.occupancy.OccPermit;
+import com.tcvcog.tcvce.entities.occupancy.OccPermitApplication;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  * @author Eric C. Darsow
  */
 public class PropertyUnit {
+    protected int unitID;
+    protected int propertyID;
+    protected String unitNumber;
     
-    private int unitID;
-    private String unitNumber;
-    private String notes;
-    private String otherKnownAddress;
-    private boolean rental;
-    private Property thisProperty;
-    private ArrayList<Person> propertyUnitPeople;
-    private ArrayList<OccPermit> occupancyPermitList;
-    private ArrayList<OccPermitApplication> occPermitApplicationList;
-    private boolean inactive;
+    protected String notes;
+    protected String otherKnownAddress;
+    
+    protected LocalDateTime rentalIntentDateStart;
+    protected LocalDateTime rentalIntentDateStop;
+    protected User rentalIntentLastUpdatedBy;
+    protected String rentalNotes;
+    protected boolean active;
+    
+    protected int conditionIntensityClassID;
+    protected LocalDateTime lastUpdatedTS;
     
 
     /**
@@ -81,19 +88,6 @@ public class PropertyUnit {
         this.notes = notes;
     }
 
-    /**
-     * @return the propertyUnitPeople
-     */
-    public ArrayList<Person> getPropertyUnitPeople() {
-        return propertyUnitPeople;
-    }
-
-    /**
-     * @param propertyUnitPeople the propertyUnitPeople to set
-     */
-    public void setPropertyUnitPeople(ArrayList<Person> propertyUnitPeople) {
-        this.propertyUnitPeople = propertyUnitPeople;
-    }
 
     /**
      * @return the otherKnownAddress
@@ -110,68 +104,125 @@ public class PropertyUnit {
     }
 
     /**
-     * @return the rental
+  
+   
+    /**
+     * @return the rentalIntentDateStart
      */
-    public boolean isRental() {
-        return rental;
+    public LocalDateTime getRentalIntentDateStart() {
+        return rentalIntentDateStart;
     }
 
     /**
-     * @param rental the rental to set
+     * @return the rentalIntentDateStop
      */
-    public void setRental(boolean rental) {
-        this.rental = rental;
+    public LocalDateTime getRentalIntentDateStop() {
+        return rentalIntentDateStop;
     }
 
     /**
-     * @return the occupancyPermitList
+     * @return the rentalIntentLastUpdatedBy
      */
-    public ArrayList<OccPermit> getOccupancyPermitList() {
-        return occupancyPermitList;
+    public User getRentalIntentLastUpdatedBy() {
+        return rentalIntentLastUpdatedBy;
     }
 
     /**
-     * @param occupancyPermitList the occupancyPermitList to set
+     * @return the rentalNotes
      */
-    public void setOccupancyPermitList(ArrayList<OccPermit> occupancyPermitList) {
-        this.occupancyPermitList = occupancyPermitList;
+    public String getRentalNotes() {
+        return rentalNotes;
     }
 
     /**
-     * @return the thisProperty
+     * @return the active
      */
-    public Property getThisProperty() {
-        return thisProperty;
+    public boolean isActive() {
+        return active;
     }
 
     /**
-     * @param thisProperty the thisProperty to set
+     * @return the conditionIntensityClassID
      */
-    public void setThisProperty(Property thisProperty) {
-        this.thisProperty = thisProperty;
+    public int getConditionIntensityClassID() {
+        return conditionIntensityClassID;
     }
 
     /**
-     * @return the occPermitApplicationList
+     * @param rentalIntentDateStart the rentalIntentDateStart to set
      */
-    public ArrayList<OccPermitApplication> getOccPermitApplicationList() {
-        return occPermitApplicationList;
+    public void setRentalIntentDateStart(LocalDateTime rentalIntentDateStart) {
+        this.rentalIntentDateStart = rentalIntentDateStart;
     }
 
     /**
-     * @param occPermitApplicationList the occPermitApplicationList to set
+     * @param rentalIntentDateStop the rentalIntentDateStop to set
      */
-    public void setOccPermitApplicationList(ArrayList<OccPermitApplication> occPermitApplicationList) {
-        this.occPermitApplicationList = occPermitApplicationList;
+    public void setRentalIntentDateStop(LocalDateTime rentalIntentDateStop) {
+        this.rentalIntentDateStop = rentalIntentDateStop;
     }
 
-    public boolean isInactive() {
-        return inactive;
+    /**
+     * @param rentalIntentLastUpdatedBy the rentalIntentLastUpdatedBy to set
+     */
+    public void setRentalIntentLastUpdatedBy(User rentalIntentLastUpdatedBy) {
+        this.rentalIntentLastUpdatedBy = rentalIntentLastUpdatedBy;
     }
 
-    public void setInactive(boolean inactive) {
-        this.inactive = inactive;
+    /**
+     * @param rentalNotes the rentalNotes to set
+     */
+    public void setRentalNotes(String rentalNotes) {
+        this.rentalNotes = rentalNotes;
     }
+
+    /**
+     * @param active the active to set
+     */
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    /**
+     * @param conditionIntensityClassID the conditionIntensityClassID to set
+     */
+    public void setConditionIntensityClassID(int conditionIntensityClassID) {
+        this.conditionIntensityClassID = conditionIntensityClassID;
+    }
+
+    /**
+     * @return the propertyID
+     */
+    public int getPropertyID() {
+        return propertyID;
+    }
+
+    /**
+     * @param propertyID the propertyID to set
+     */
+    public void setPropertyID(int propertyID) {
+        this.propertyID = propertyID;
+    }
+
+    /**
+     * @return the lastUpdatedTS
+     */
+    public LocalDateTime getLastUpdatedTS() {
+        return lastUpdatedTS;
+    }
+
+    /**
+     * @param lastUpdatedTS the lastUpdatedTS to set
+     */
+    public void setLastUpdatedTS(LocalDateTime lastUpdatedTS) {
+        this.lastUpdatedTS = lastUpdatedTS;
+    }
+    /**
+     * @return the periodList
+     */
+    /**
+     * @param periodList the periodList to set
+     */
  
     
     

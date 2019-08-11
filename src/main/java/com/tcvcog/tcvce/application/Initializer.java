@@ -16,17 +16,22 @@
  */
 package com.tcvcog.tcvce.application;
 
+import com.tcvcog.tcvce.coordinators.BlobCoordinator;
 import com.tcvcog.tcvce.coordinators.SearchCoordinator;
 import com.tcvcog.tcvce.coordinators.CaseCoordinator;
+import com.tcvcog.tcvce.coordinators.ChoiceCoordinator;
 import com.tcvcog.tcvce.coordinators.CodeCoordinator;
+import com.tcvcog.tcvce.coordinators.DataCoordinator;
 import com.tcvcog.tcvce.coordinators.EventCoordinator;
 import com.tcvcog.tcvce.coordinators.PersonCoordinator;
 import com.tcvcog.tcvce.coordinators.PropertyCoordinator;
 import com.tcvcog.tcvce.coordinators.PublicInfoCoordinator;
 import com.tcvcog.tcvce.coordinators.SessionSystemCoordinator;
 import com.tcvcog.tcvce.coordinators.UserCoordinator;
+import com.tcvcog.tcvce.integration.BlobIntegrator;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
+import com.tcvcog.tcvce.integration.ChoiceIntegrator;
 import com.tcvcog.tcvce.integration.CitationIntegrator;
 import com.tcvcog.tcvce.integration.CodeIntegrator;
 import com.tcvcog.tcvce.integration.ViolationIntegrator;
@@ -38,14 +43,13 @@ import com.tcvcog.tcvce.util.Constants;
 import com.tcvcog.tcvce.integration.PropertyIntegrator;
 import com.tcvcog.tcvce.integration.UserIntegrator;
 
-import com.tcvcog.tcvce.occupancy.integration.ChecklistIntegrator;
-import com.tcvcog.tcvce.occupancy.integration.OccupancyPermitIntegrator;
-import com.tcvcog.tcvce.occupancy.integration.OccupancyInspectionIntegrator;
+import com.tcvcog.tcvce.occupancy.integration.OccInspectionIntegrator;
+import com.tcvcog.tcvce.occupancy.integration.OccupancyIntegrator;
 import com.tcvcog.tcvce.occupancy.integration.PaymentIntegrator;
 
 import com.tcvcog.tcvce.integration.LogIntegrator;
 import com.tcvcog.tcvce.integration.SystemIntegrator;
-import com.tcvcog.tcvce.occupancy.coordinators.OccupancyCoordinator;
+import com.tcvcog.tcvce.coordinators.OccupancyCoordinator;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -142,14 +146,11 @@ public class Initializer implements ServletContextListener{
         
         // occupancy "modules"
         
-        ChecklistIntegrator chklstInt = new ChecklistIntegrator();
-        servletContext.setAttribute("ChecklistIntegrator", chklstInt);
+        OccInspectionIntegrator inspecInt = new OccInspectionIntegrator();
+        servletContext.setAttribute("occInspectionIntegrator", inspecInt);
         
-        OccupancyInspectionIntegrator occupancyInspectionIntegrator = new OccupancyInspectionIntegrator();
-        servletContext.setAttribute("occupancyInspectionIntegrator", occupancyInspectionIntegrator);
-        
-        OccupancyPermitIntegrator occupancyPermitIntegrator = new OccupancyPermitIntegrator();
-        servletContext.setAttribute("occupancyPermitIntegrator", occupancyPermitIntegrator);
+        OccupancyIntegrator occupancyIntegrator = new OccupancyIntegrator();
+        servletContext.setAttribute("occupancyIntegrator", occupancyIntegrator);
         
         OccupancyCoordinator occupancyCoordinator = new OccupancyCoordinator();
         servletContext.setAttribute("occupancyCoordinator", occupancyCoordinator);
@@ -167,14 +168,28 @@ public class Initializer implements ServletContextListener{
         SearchCoordinator sc = new SearchCoordinator();
         servletContext.setAttribute("searchCoordinator", sc);
          
-        ImageServices imageServicesBean = new ImageServices();
-        servletContext.setAttribute("imageServices", imageServicesBean);
+        BlobCoordinator blobCoordinator = new BlobCoordinator();
+        servletContext.setAttribute("blobCoordinator", blobCoordinator);
+        
+        BlobIntegrator blobIntegrator = new BlobIntegrator();
+        servletContext.setAttribute("blobIntegrator", blobIntegrator);
         
         PersonCoordinator persCoor = new PersonCoordinator();
         servletContext.setAttribute("personCoordinator", persCoor);
          
         SessionSystemCoordinator ssCoor = new SessionSystemCoordinator();
         servletContext.setAttribute("sessionSystemCoordinator", ssCoor);
+         
+         
+        DataCoordinator dc = new DataCoordinator();
+        servletContext.setAttribute("dataCoordinator", dc);
+        
+        ChoiceCoordinator choiceCoord = new ChoiceCoordinator();
+        servletContext.setAttribute("choiceCoordinator", choiceCoord);
+        
+        ChoiceIntegrator choiceInt = new ChoiceIntegrator();
+        servletContext.setAttribute("choiceIntegrator", choiceInt);
+        
          
         
 //        SessionBean sb = new SessionBean();

@@ -20,12 +20,15 @@ package com.tcvcog.tcvce.occupancy.application;
 import com.tcvcog.tcvce.application.BackingBeanUtils;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.Municipality;
-import com.tcvcog.tcvce.occupancy.entities.OccupancyInspection;
-import com.tcvcog.tcvce.occupancy.integration.OccupancyInspectionIntegrator;
-import com.tcvcog.tcvce.occupancy.entities.OccInspecFee;
+import com.tcvcog.tcvce.entities.occupancy.OccInspection;
+import com.tcvcog.tcvce.entities.Fee;
+import com.tcvcog.tcvce.occupancy.integration.OccupancyIntegrator;
+import com.tcvcog.tcvce.occupancy.integration.PaymentIntegrator;
 import java.io.Serializable;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.*;
 import javax.faces.event.ActionEvent;
@@ -38,8 +41,8 @@ import javax.faces.event.ActionEvent;
 @ViewScoped
 public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serializable {
     
-    private ArrayList<OccInspecFee> occupancyInspectionFeeList;
-    private OccInspecFee selectedOccupancyInspectionFee;
+    private ArrayList<Fee> occupancyInspectionFeeList;
+    private Fee selectedOccupancyInspectionFee;
     private int formOccupancyInspectionFeeID;
     private Municipality formMuni;
     private String formOccupancyInspectionFeeName;
@@ -49,7 +52,7 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     private String formOccupancyInspectionFeeNotes;
     
     //create data fields for user editing/updating of occ. inspection fees
-    private OccInspecFee newFormSelectedOccupancyInspectionFee;
+    private Fee newFormSelectedOccupancyInspectionFee;
     private int newFormOccupancyInspectionFeeID;
     private String newFormOccupancyInspectionFeeName;
     private double newFormOccupancyInspectionFeeAmount;
@@ -68,8 +71,8 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
         if(getSelectedOccupancyInspectionFee() != null){
             setFormOccupancyInspectionFeeID(selectedOccupancyInspectionFee.getOccupancyInspectionFeeID());
             setFormMuni(selectedOccupancyInspectionFee.getMuni());
-            setFormOccupancyInspectionFeeName(selectedOccupancyInspectionFee.getOccupancyInspectionFeeName());
-            setFormOccupancyInspectionFeeAmount(selectedOccupancyInspectionFee.getOccupancyInspectionFeeAmount());
+            setFormOccupancyInspectionFeeName(selectedOccupancyInspectionFee.getFeeName());
+            setFormOccupancyInspectionFeeAmount(selectedOccupancyInspectionFee.getFeeAmount());
             //setFormOccupancyInspectionFeeNotes(selectedOccupancyInspectionFee.getOccupancyInspectionFeeNotes());
             /*
             Have to figure out what to do w/ setting dates...
@@ -85,87 +88,76 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     }
     
     public void commitOccupancyInspectionFeeUpdates(ActionEvent e){
-        OccupancyInspectionIntegrator oifi = getOccupancyInspectionIntegrator();
-        OccInspecFee oif = selectedOccupancyInspectionFee;
+        OccupancyIntegrator oifi = getOccupancyIntegrator();
+        PaymentIntegrator pi = getPaymentIntegrator();
+        Fee oif = selectedOccupancyInspectionFee;
         
         oif.setMuni(formMuni);
-        oif.setOccupancyInspectionFeeName(formOccupancyInspectionFeeName);
-        oif.setOccupancyInspectionFeeAmount(formOccupancyInspectionFeeAmount);
-        oif.setOccupancyInspectionFeeEffDate(formOccupancyInspectionFeeEffDate.toInstant()
+        oif.setFeeName(formOccupancyInspectionFeeName);
+        oif.setFeeAmount(formOccupancyInspectionFeeAmount);
+        oif.setEffectiveDate(formOccupancyInspectionFeeEffDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        oif.setOccupancyInspectionFeeExpDate(formOccupancyInspectionFeeExpDate.toInstant()
+        oif.setExpiryDate(formOccupancyInspectionFeeExpDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        //oif.setOccupancyInspectionFeeNotes(formOccupancyInspectionFeeNotes);
-        try{
-            oifi.updateOccupancyInspectionFee(oif);
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO,
-                    "Occupancy Inspection Fee updated!", ""));
-        } catch (IntegrationException ex){
-            getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                    "Unable to update occupancy inspection fee in database.",
-                    "This must be corrected by the System Administrator"));
+        try {
+            //oif.setOccupancyInspectionFeeNotes(formOccupancyInspectionFeeNotes);
+            pi.updateOccupancyInspectionFee(oif);
+        } catch (IntegrationException ex) {
         }
+        getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        "Occupancy Inspection Fee updated!", ""));
     }
     
     public void addNewOccupancyInspectionFee(ActionEvent e){
-        OccupancyInspectionIntegrator oifi = getOccupancyInspectionIntegrator();
-        OccInspecFee oif = new OccInspecFee();
+        PaymentIntegrator pi = getPaymentIntegrator();
+        Fee oif = new Fee();
         
         oif.setOccupancyInspectionFeeID(newFormOccupancyInspectionFeeID);
         oif.setMuni(formMuni);
-        oif.setOccupancyInspectionFeeName(newFormOccupancyInspectionFeeName);
-        oif.setOccupancyInspectionFeeAmount(newFormOccupancyInspectionFeeAmount);
-        oif.setOccupancyInspectionFeeEffDate(newFormOccupancyInspectionFeeEffDate.toInstant()
+        oif.setFeeName(newFormOccupancyInspectionFeeName);
+        oif.setFeeAmount(newFormOccupancyInspectionFeeAmount);
+        oif.setEffectiveDate(newFormOccupancyInspectionFeeEffDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        oif.setOccupancyInspectionFeeExpDate(newFormOccupancyInspectionFeeExpDate.toInstant()
+        oif.setExpiryDate(newFormOccupancyInspectionFeeExpDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        oif.setOccupancyInspectionFeeNotes(newFormOccupancyInspectionFeeNotes);
+        oif.setNotes(newFormOccupancyInspectionFeeNotes);
         
-        try{
-            oifi.insertOccupancyInspectionFee(oif);
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO,
-                    "Occupancy Inspection Fee updated!", ""));
-        } catch (IntegrationException ex){
-            getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                    "Unable to add new Occupancy Inspection Fee to database.",
-                    "This must be corrected by the System Administrator"));
+        try {
+            pi.insertOccupancyInspectionFee(oif);
+        } catch (IntegrationException ex) {
         }
+        getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        "Occupancy Inspection Fee updated!", ""));
     
     }
     
     public String addOccupancyInspectionFee(){
-        OccInspecFee oif = new OccInspecFee();
-        OccupancyInspectionIntegrator oifi = getOccupancyInspectionIntegrator();
+        PaymentIntegrator pi = getPaymentIntegrator();
+        Fee oif = new Fee();
         oif.setOccupancyInspectionFeeID(formOccupancyInspectionFeeID);
         oif.setMuni(getFormMuni());
-        oif.setOccupancyInspectionFeeName(formOccupancyInspectionFeeName);
-        oif.setOccupancyInspectionFeeAmount(formOccupancyInspectionFeeAmount);
-        oif.setOccupancyInspectionFeeEffDate(formOccupancyInspectionFeeEffDate.toInstant()
+        oif.setFeeName(formOccupancyInspectionFeeName);
+        oif.setFeeAmount(formOccupancyInspectionFeeAmount);
+        oif.setEffectiveDate(formOccupancyInspectionFeeEffDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        oif.setOccupancyInspectionFeeExpDate(formOccupancyInspectionFeeExpDate.toInstant()
+        oif.setExpiryDate(formOccupancyInspectionFeeExpDate.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime());
-        oif.setOccupancyInspectionFeeNotes(formOccupancyInspectionFeeNotes);
+        oif.setNotes(formOccupancyInspectionFeeNotes);
         try {
-            oifi.insertOccupancyInspectionFee(oif);
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO,
-                    "Successfully added occupancy inspection fee to database!", ""));
-        } catch(IntegrationException ex) {
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                    "Unable to add occupancy inspection fee to database, sorry!", "Check server print out..."));
-            return "";
+            pi.insertOccupancyInspectionFee(oif);
+        } catch (IntegrationException ex) {
         }
+        getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                        "Successfully added occupancy inspection fee to database!", ""));
         
         return "occupancyInspectionFeeManage";
         
@@ -173,20 +165,16 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     }
     
     public void deleteSelectedOccupancyInspectionFee(ActionEvent e){
-        OccupancyInspectionIntegrator oifi = getOccupancyInspectionIntegrator();
+        PaymentIntegrator pi = getPaymentIntegrator();
+        
         if(getSelectedOccupancyInspectionFee() != null){
             try {
-                oifi.deleteOccupancyInspectionFee(getSelectedOccupancyInspectionFee());
-                getFacesContext().addMessage(null,
+                pi.deleteOccupancyInspectionFee(getSelectedOccupancyInspectionFee());
+            } catch (IntegrationException ex) {
+            }
+            getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO, 
                             "Occupancy inspection fee deleted forever!", ""));
-            } catch (IntegrationException ex) {
-                getFacesContext().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, 
-                            "Unable to delete occupancy inspection fee--probably because it is used "
-                                    + "somewhere in the database. Sorry.", 
-                            "This category will always be with us."));
-            }
             
         } else {
             getFacesContext().addMessage(null,
@@ -198,15 +186,12 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     /**
      * @return the occupancyInspectionFeeList
      */
-    public ArrayList<OccInspecFee> getOccupancyInspectionFeeList() {
+    public ArrayList<Fee> getOccupancyInspectionFeeList() {
+        PaymentIntegrator pi = getPaymentIntegrator();
         try {
-            OccupancyInspectionIntegrator oi = getOccupancyInspectionIntegrator();
-            ArrayList<OccInspecFee> oil = oi.getOccupancyInspectionFeeList();
+            List<Fee> oil = pi.getOccupancyInspectionFeeList();
         } catch (IntegrationException ex) {
-            getFacesContext().addMessage(null, 
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                        "Unable to load OccupancyInspectionFeeList",
-                        "This must be corrected by the system administrator"));
+            System.out.println(ex);
         }
         if(occupancyInspectionFeeList != null){
         return occupancyInspectionFeeList;
@@ -219,21 +204,21 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     /**
      * @param occupancyInspectionFeeList the occupancyInspectionFeeList to set
      */
-    public void setOccupancyInspectionFeeList(ArrayList<OccInspecFee> occupancyInspectionFeeList) {
+    public void setOccupancyInspectionFeeList(ArrayList<Fee> occupancyInspectionFeeList) {
         this.occupancyInspectionFeeList = occupancyInspectionFeeList;
     }
 
     /**
      * @return the selectedOccupancyInspectionFee
      */
-    public OccInspecFee getSelectedOccupancyInspectionFee() {
+    public Fee getSelectedOccupancyInspectionFee() {
         return selectedOccupancyInspectionFee;
     }
 
     /**
      * @param selectedOccupancyInspectionFee the selectedOccupancyInspectionFee to set
      */
-    public void setSelectedOccupancyInspectionFee(OccInspecFee selectedOccupancyInspectionFee) {
+    public void setSelectedOccupancyInspectionFee(Fee selectedOccupancyInspectionFee) {
         this.selectedOccupancyInspectionFee = selectedOccupancyInspectionFee;
     }
 
@@ -338,14 +323,14 @@ public class OccupancyInspectionFeeBB extends BackingBeanUtils implements Serial
     /**
      * @return the newFormSelectedOccupancyInspectionFee
      */
-    public OccInspecFee getNewFormSelectedOccupancyInspectionFee() {
+    public Fee getNewFormSelectedOccupancyInspectionFee() {
         return newFormSelectedOccupancyInspectionFee;
     }
 
     /**
      * @param newFormSelectedOccupancyInspectionFee the newFormSelectedOccupancyInspectionFee to set
      */
-    public void setNewFormSelectedOccupancyInspectionFee(OccInspecFee newFormSelectedOccupancyInspectionFee) {
+    public void setNewFormSelectedOccupancyInspectionFee(Fee newFormSelectedOccupancyInspectionFee) {
         this.newFormSelectedOccupancyInspectionFee = newFormSelectedOccupancyInspectionFee;
     }
 
