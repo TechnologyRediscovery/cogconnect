@@ -51,7 +51,7 @@ def add_munis():
         cursor.execute(muni_insert_sql, tuple(l))
     db_conn.commit()
     cursor.close()
-    print("Insert was a success. Fuck yeah. ")
+    print("Insert was a success.")
                 
             
     
