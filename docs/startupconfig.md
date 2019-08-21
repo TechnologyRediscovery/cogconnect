@@ -5,7 +5,7 @@ In order to login to codeNforce, a series of entries must be made in database ta
 ## Background on the munilogin table
 This table stores highly detailed information about the permissions allowed to each user in each municipality in which they work by declaring a start and stop date that each level of permissions. The table itself looks like a beast since it stores two dates and a few boolean flags for each user role but the pattern is simple: make sure today's date is included inside the start and end date bounds of the user rank you want to be granted upon login. 
 
-`supportdatestart` and `supportdatestop` correspond with developer permissions--so for most testing purposes, it`s wise to have today`s date included in these bounds.
+`supportdatestart` and `supportdatestop` correspond with developer permissions--so for most testing purposes, it's wise to have today's date included in these bounds.
 
 The initialization system embedded in the UserCoordinator uses the UserAccessRecord object (which stores the start and stop dates for each permitted role) to calculate the highest rank allowed for each user it is asked to configure. 
 
