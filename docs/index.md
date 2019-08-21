@@ -5,14 +5,12 @@ COGConnect is a JavaEE-based, open source web database application for managing 
 As technical documentation designed for developers, the primary audience for these pages are system administrators and developers who wish to build, edit, or maintain an existing CodeConnect instance. Sub-components of the system each have their own briefing page which links to specific files in the repo as they are explained and indexes how-to pages for various tasks. 
 
 ## Subsystem briefing pages
+
+[Configuring the database for an initial login](startupconfig.md)
+
 [Code enforcement phase management and requested events](cecasephases.md)
+
 [Notice of violation letters](novs.md)
-
-
-
-## Subsystem A) Property database
-A property exist as a record in the `property` table. 
-
 
 [Essential documentation links and topic references](references.md)
 
@@ -24,4 +22,4 @@ A property exist as a record in the `property` table.
 
 [Property unit management mini-project](property-unit-mini-project.md)
 
-![CodeConnect system components](img/ccoverview.jpg)
+[CodeConnect system components](img/ccoverview.jpg)
