@@ -21,6 +21,9 @@
     <property name="settings.editor.selected.configurable" value="preferences.editor" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$USER_HOME$/cogconnect/codeconnect/scripts/migrationscripts" />
       <recent name="$PROJECT_DIR$" />
@@ -38,7 +41,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.record_photofile_client-based">
+  <component name="RunManager" selected="Python.getphotodocdescription">
     <configuration name="getphotodocdescription" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="photodoc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -125,8 +128,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.record_photofile_client-based" />
         <item itemvalue="Python.getphotodocdescription" />
+        <item itemvalue="Python.record_photofile_client-based" />
         <item itemvalue="Python.rest-2" />
         <item itemvalue="Python.test" />
       </list>

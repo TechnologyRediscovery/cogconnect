@@ -202,52 +202,59 @@ def assemble_photodoc_propertyphotodoc_photodoctype_table(dirpath, propertyid):
 
 
 def record_photodoc():
-    # prompting user to input the house address
-    print('--------------------------------------------------------------------------------------')
-    print('[ STEP-1: Input the house address: ]')
-    inputhouseaddress = input()
-    address_resultlist = select_property_address(inputhouseaddress)
-    address_resultlistlen = len(address_resultlist)
-    if address_resultlistlen == 0:
-        print('- Do not find the address in the database')
-    elif address_resultlistlen != 0:
-        count = 0
-        print('- Result:')
-        for n in address_resultlist:
-            count = count + 1
-            propertyid = str(n[0])
-            address = str(n[1])
-            parid = str(n[2])
-            print('- ' + str(count) + ' - propertyid: ' + propertyid + ' house address: ' + address + ' parid: ' + parid)
-
-        print('[ STEP-2: Select the matched address: ]')
-
-        loop = True
-        while loop:
-            try:
-                print('- Input the propertyid:')
-                inputpropertyid = input()
-                propertyid_resultlist = select_property_propertyid(inputpropertyid)
-
-                m = propertyid_resultlist
-                comfirm_propertyid = str(m[0])
-                comfirm_address = str(m[1])
-                comfirm_parid = str(m[2])
-                print('- propertyid: ' + comfirm_propertyid + ' house address: ' + comfirm_address + ' parid: ' + comfirm_parid)
-
-                confirm = int(input('- Press 1: Confirm, Press 2: Adjusting again: '))
-                if confirm == 1:
-                    loop = False
-                    print('[ STEP-3: Input the path of directory that contain photo file: ]')
-                    dirpath = input('- Input the dir path:\n')
-                    assemble_photodoc_propertyphotodoc_photodoctype_table(dirpath, comfirm_propertyid)
-                else:
-                    loop = True
-
-            except:
-                print('[ Notice ] Please insert the correct number\n')
+    loop = True
+    while loop:
+        try:
+            # prompting user to input the house address
+            print('--------------------------------------------------------------------------------------')
+            print('[ STEP-1: Input the house address: ]')
+            inputhouseaddress = input()
+            address_resultlist = select_property_address(inputhouseaddress)
+            address_resultlistlen = len(address_resultlist)
+            if address_resultlistlen == 0:
                 loop = True
+                print('- Do not find the address in the database')
+            elif address_resultlistlen != 0:
+                loop = False
+                count = 0
+                print('- Result:')
+                for n in address_resultlist:
+                    count = count + 1
+                    propertyid = str(n[0])
+                    address = str(n[1])
+                    parid = str(n[2])
+                    print('- ' + str(count) + ' - propertyid: ' + propertyid + ' house address: ' + address + ' parid: ' + parid)
 
+                print('[ STEP-2: Select the matched address: ]')
+
+                confirm_loop = True
+                while confirm_loop:
+                    try:
+                        print('- Input the propertyid:')
+                        inputpropertyid = input()
+                        propertyid_resultlist = select_property_propertyid(inputpropertyid)
+
+                        m = propertyid_resultlist
+                        comfirm_propertyid = str(m[0])
+                        comfirm_address = str(m[1])
+                        comfirm_parid = str(m[2])
+                        print('- propertyid: ' + comfirm_propertyid + ' house address: ' + comfirm_address + ' parid: ' + comfirm_parid)
+
+                        confirm = int(input('- Press 1: Confirm, Press 2: Adjusting again: '))
+                        if confirm == 1:
+                            confirm_loop = False
+                            print('[ STEP-3: Input the path of directory that contain photo file: ]')
+                            dirpath = input('- Input the dir path:\n')
+                            assemble_photodoc_propertyphotodoc_photodoctype_table(dirpath, comfirm_propertyid)
+                            print('[ STEP-3: Finished Recording ]')
+                        else:
+                            confirm_loop = True
+
+                    except:
+                        print('[ Notice ] Please insert the correct number\n')
+                        confirm_loop = True
+        except:
+            loop = True
 
 def main():
     record_photodoc()
