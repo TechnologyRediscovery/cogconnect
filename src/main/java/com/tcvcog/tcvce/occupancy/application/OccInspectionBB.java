@@ -647,7 +647,11 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         EventCoordinator ec = getEventCoordinator();
         int freshEventRuleID;
         try {
-            freshEventRuleID = ec.rules_addNewEventRuleAbstract(currentEventRuleAbstract, currentOccPeriod, null, includeEventRuleInCurrentOccPeriodTemplate);
+            freshEventRuleID = ec.rules_createEventRuleAbstract(currentEventRuleAbstract, 
+                                                                currentOccPeriod, 
+                                                                null, 
+                                                                includeEventRuleInCurrentOccPeriodTemplate,
+                                                                getSessionBean().getSessionUser());
             getFacesContext().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO,
                 "New event rule added with ID " + freshEventRuleID, ""));
@@ -664,10 +668,35 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     
     public void rules_addEventRuleByID(ActionEvent ev){
         EventCoordinator ec = getEventCoordinator();
+        try {
+            EventRuleAbstract era = ec.rules_getEventRuleAbstract(formEventRuleIDToAdd);
+            ec.rules_attachEventRule(era, currentOccPeriod, getSessionBean().getSessionUser());
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                "Success! added rule set to occ period", ""));
+        } catch (IntegrationException | CaseLifecycleException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                ex.getMessage(), ""));
+            
+        }
     }
     
     public void rules_addEventRuleSet(EventRuleSet ers){
         EventCoordinator ec = getEventCoordinator();
+        try {
+            ec.rules_attachRuleSet(ers, currentOccPeriod, getSessionBean().getSessionUser());
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                "Success! added rule set to occ period", ""));
+        } catch (IntegrationException | CaseLifecycleException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                ex.getMessage(), ""));
+            
+        }
         
     }
     
@@ -1133,22 +1162,6 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         }
      }
      
-     public void addNewEventRule(ActionEvent ev) {
-         EventCoordinator ec = getEventCoordinator();
-        try {
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO,
-                "Added new event rule!", ""));
-            ec.rules_attachEventRule(formEventRuleIDToAdd, getSessionBean().getSessionUser());
-        } catch (IntegrationException ex) {
-            System.out.println(ex);
-            getFacesContext().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                "Could not attach the new event rule", ""));
-            
-        }
-        
-     }
     
      /**
       * We can only delete one that was JUST made - OK if this doesn't get implemented

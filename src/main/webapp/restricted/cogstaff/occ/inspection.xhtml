@@ -3239,7 +3239,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                 <p:spacer height="5px" />
                                 
                                  <h:outputLabel styleClass="ui-label" for="occperiod-eventruleset-solb">
-                                        <h:outputText value="Event rule set: "/>
+                                        <h:outputText value="Choose an event rule set: "/>
                                 </h:outputLabel>
                                 
                                  <p:selectOneMenu style="width: auto;" 
@@ -3260,9 +3260,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                 <p:commandButton    id="eventrules-button-addruleset"
                                                     ajax="true" 
                                                     styleClass="proposal-choice-button"
-                                                    actionListener="#{occInspectionBB.rules_initiateEventRuleCreate}"
+                                                    actionListener="#{occInspectionBB.rules_addEventRuleSet(occInspectionBB.selectedEventRuleSet)}"
                                                     rendered="#{sessionBean.sessionUser.keyCard.hasEnfOfficialPermissions}"
-                                                    value="Add rule by ID"
+                                                    value="Add rule by set"
                                                     icon="fa fa-plus"
                                                     update="occperiod-proposals-eventrules-datatable
                                                     occperiod-dialog-proposalmetadata-form-messages 

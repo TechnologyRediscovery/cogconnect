@@ -18,6 +18,7 @@ Council of Governments, PA
 package com.tcvcog.tcvce.coordinators;
 
 import com.tcvcog.tcvce.application.BackingBeanUtils;
+import com.tcvcog.tcvce.application.interfaces.IFace_EventRuleGoverned;
 import com.tcvcog.tcvce.domain.AuthorizationException;
 import com.tcvcog.tcvce.domain.CaseLifecycleException;
 import com.tcvcog.tcvce.domain.EventException;
@@ -772,23 +773,51 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
     } // close method
     
     
-    /**
-     * TODO: Finish me!
-     * @param eventRuleID
-     * @param u 
-     * @throws com.tcvcog.tcvce.domain.IntegrationException 
-     */
-    public void rules_attachEventRule(int eventRuleID, User u) throws IntegrationException{
+    public EventRuleAbstract rules_getEventRuleAbstract(int eraid) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
-        EventRuleImplementation eri = new EventRuleImplementation(ei.rules_getEventRuleAbstract(eventRuleID));
-        
+        return ei.rules_getEventRuleAbstract(eraid);
     }
     
+    /**
+     * Attaches a single event rule to an EventRuleGoverned entity, the type of which is determined
+     * internally with instanceof checks for OccPeriod and CECase Objects
+     * @param era
+     * @param rg
+     * @param usr
+     * @throws com.tcvcog.tcvce.domain.IntegrationException 
+     * @throws com.tcvcog.tcvce.domain.CaseLifecycleException if an IFaceEventRuleGoverned instances is neither a CECase or an OccPeriod
+     */
+    public void rules_attachEventRule(EventRuleAbstract era, IFace_EventRuleGoverned rg, User usr) throws IntegrationException, CaseLifecycleException{
+        EventIntegrator ei = getEventIntegrator();
+        ChoiceCoordinator cc = getChoiceCoordinator();
+        int freshObjectID = 0;
+        if(rg instanceof OccPeriod){
+                OccPeriod op = (OccPeriod) rg;
+                rules_attachEventRuleAbstractToOccPeriod(era, op, usr);
+                if(freshObjectID != 0 && era.getPromptingProposal() != null){
+                    cc.
+                    
+                }
+                
+            } else if (rg instanceof CECase){ 
+                CECase cec = (CECase) rg;
+                rules_attachEventRuleAbstractToCECase(era, cec);
+            } else {
+                throw new CaseLifecycleException("Cannot attach rule set");
+            }
+    }
+    
+    /**
+     * Returns complete muni dump of the eventrule table
+     * 
+     * @return complete event rule list, including inactive events
+     * @throws IntegrationException 
+     */
     public List<EventRuleSet> rules_getEventRuleSetList() throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         return ei.rules_getEventRuleSetList();
         
-    }
+    }  
     
     public EventRuleAbstract rules_getInitializedEventRuleAbstract(){
         EventRuleAbstract era = new EventRuleAbstract();
@@ -796,36 +825,48 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         return era;
     }
     
-    
     public void rules_updateEventRuleAbstract(EventRuleAbstract era) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         ei.rules_updateEventRule(era);
         
     }
     
-    public int rules_addNewEventRuleAbstract(EventRuleAbstract era, OccPeriod period, CECase cse, boolean connectToOccPerTypeRuleSet) throws IntegrationException{
+    /**
+     * Primary entrance point for an EventRuleAbstract instance (not its connection to an Object)
+     * @param era required instance
+     * @param period optional--only if you're attaching to an OccPeriod
+     * @param cse Optional--only if you're attachign to a CECase
+     * @param connectToBOBRuleList Switch me on in order to 
+     * @param usr 
+     * @return
+     * @throws IntegrationException 
+     */
+    public int rules_createEventRuleAbstract(EventRuleAbstract era, OccPeriod period, CECase cse, boolean connectToBOBRuleList, User usr) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         int freshEventRuleID;
         freshEventRuleID = ei.rules_insertEventRule(era);
         if(period != null && cse == null){
             era = ei.rules_getEventRuleAbstract(freshEventRuleID);
-            rules_attachEventRuleAbstractToOccPeriod(era, period);
+            rules_attachEventRuleAbstractToOccPeriod(era, period, usr);
+            if(connectToBOBRuleList){
+                rules_attachEventRuleAbstractToOccPeriodTypeRuleSet(era, period);
+            }
         }
         if(period == null && cse !=null){
             era = ei.rules_getEventRuleAbstract(freshEventRuleID);
-            rules_attachEventRuleAbstractToMuniCERuleSet(era, cse);
-        }
-        if(connectToOccPerTypeRuleSet){
-            rules_attachEventRuleAbstractToOccPeriodTypeRuleSet(era, period);
+            if(connectToBOBRuleList){
+                rules_attachEventRuleAbstractToMuniCERuleSet(era, cse);
+            }
         }
         
         System.out.println("EventCoordinator.rules_addNewEventRuleAbstract | returned ID: " + freshEventRuleID);
         return freshEventRuleID;
     }
     
-    public void rules_attachEventRuleAbstractToOccPeriod(EventRuleAbstract era, OccPeriod period) throws IntegrationException{
+    private void rules_attachEventRuleAbstractToOccPeriod(EventRuleAbstract era, OccPeriod period, User usr) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         EventRuleOccPeriod erop = new EventRuleOccPeriod(new EventRuleImplementation(era));
+        erop.setAttachedTS(LocalDateTime.now());
         erop.setOccPeriodID(period.getPeriodID());
         ei.rules_insertEventRuleOccPeriod(erop);
     }
@@ -835,8 +876,45 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         ei.rules_addEventRuleAbstractToOccPeriodTypeRuleSet(era, period.getType().getEventRuleSetID());
     }
     
+    /**
+     * TODO: Finish my guts!
+     * @param muni to which we want to include the rule. The Municipality's profile will be pulled and its 
+     * @param era 
+     */
+    public void rules_includeEventRuleAbstractInCECaseDefSet(Municipality muni, EventRuleAbstract era){
+        
+    }
+    
+    public void rules_attachRuleSet(EventRuleSet ers, IFace_EventRuleGoverned rg, User usr) throws IntegrationException, CaseLifecycleException{
+        for(EventRuleAbstract era: ers.getRuleList()){
+            if(rg instanceof OccPeriod){
+                OccPeriod op = (OccPeriod) rg;
+                rules_attachEventRuleAbstractToOccPeriod(era, op, usr);
+            } else if (rg instanceof CECase){
+                CECase cec = (CECase) rg;
+                rules_attachEventRuleAbstractToCECase(era, cec);
+            } else {
+                throw new CaseLifecycleException("Cannot attach rule set");
+            }
+        }
+        
+    }
     
     
+    /**
+     * TODO: Finish my guts
+     * @param era
+     * @param cse 
+     */
+    private void rules_attachEventRuleAbstractToCECase(EventRuleAbstract era, CECase cse){
+        
+    }
+    
+    /**
+     * TODO: finish my guts
+     * @param era
+     * @param cse 
+     */
     public void rules_attachEventRuleAbstractToMuniCERuleSet(EventRuleAbstract era, CECase cse){
         
     }
