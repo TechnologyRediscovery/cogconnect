@@ -29,7 +29,7 @@ public class Proposal extends EntityUtils implements Serializable, Comparable<Pr
     
     protected LocalDateTime activatesOn;
     protected LocalDateTime expiresOn;
-    protected LocalDateTime responseTimestamp;
+    protected LocalDateTime responseTS;
     
     protected boolean active;
     protected boolean hidden;
@@ -98,18 +98,18 @@ public class Proposal extends EntityUtils implements Serializable, Comparable<Pr
     }
 
     /**
-     * @param responseTimestamp the responseTimestamp to set
+     * @param responseTS the responseTS to set
      */
-    public void setResponseTimestamp(LocalDateTime responseTimestamp) {
-        this.responseTimestamp = responseTimestamp;
+    public void setResponseTS(LocalDateTime responseTS) {
+        this.responseTS = responseTS;
     }
 
 
     /**
-     * @return the responseTimestamp
+     * @return the responseTS
      */
-    public LocalDateTime getResponseTimestamp() {
-        return responseTimestamp;
+    public LocalDateTime getResponseTS() {
+        return responseTS;
     }
 
     /**
@@ -328,7 +328,7 @@ public class Proposal extends EntityUtils implements Serializable, Comparable<Pr
         hash = 47 * hash + Objects.hashCode(this.responderActual);
         hash = 47 * hash + Objects.hashCode(this.activatesOn);
         hash = 47 * hash + Objects.hashCode(this.expiresOn);
-        hash = 47 * hash + Objects.hashCode(this.responseTimestamp);
+        hash = 47 * hash + Objects.hashCode(this.responseTS);
         hash = 47 * hash + (this.active ? 1 : 0);
         hash = 47 * hash + (this.hidden ? 1 : 0);
         hash = 47 * hash + Objects.hashCode(this.generatingEvent);

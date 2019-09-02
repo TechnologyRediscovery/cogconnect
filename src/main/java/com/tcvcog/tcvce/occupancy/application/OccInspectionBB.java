@@ -16,24 +16,14 @@ import com.tcvcog.tcvce.domain.EventException;
 import com.tcvcog.tcvce.domain.InspectionException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.domain.ViolationException;
-import com.tcvcog.tcvce.entities.CECaseEvent;
-import com.tcvcog.tcvce.entities.Choice;
-import com.tcvcog.tcvce.entities.EventCategory;
-import com.tcvcog.tcvce.entities.EventType;
-import com.tcvcog.tcvce.entities.Person;
-import com.tcvcog.tcvce.entities.Property;
-import com.tcvcog.tcvce.entities.PropertyUnit;
-import com.tcvcog.tcvce.entities.PropertyUnitWithProp;
-import com.tcvcog.tcvce.entities.Proposal;
-import com.tcvcog.tcvce.entities.ProposalOccPeriod;
-import com.tcvcog.tcvce.entities.User;
+import com.tcvcog.tcvce.entities.*;
 import com.tcvcog.tcvce.entities.occupancy.OccChecklistTemplate;
 import com.tcvcog.tcvce.entities.occupancy.OccEvent;
 import com.tcvcog.tcvce.entities.occupancy.OccInspectedSpace;
 import com.tcvcog.tcvce.entities.occupancy.OccInspectedSpaceElement;
 import com.tcvcog.tcvce.entities.occupancy.OccInspection;
 import com.tcvcog.tcvce.entities.occupancy.OccInspectionStatusEnum;
-import com.tcvcog.tcvce.entities.occupancy.OccInspectionViewOptions;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsOccChecklistItemsEnum;
 import com.tcvcog.tcvce.entities.occupancy.OccLocationDescriptor;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriodType;
@@ -48,9 +38,14 @@ import com.tcvcog.tcvce.integration.PropertyIntegrator;
 import com.tcvcog.tcvce.occupancy.integration.OccInspectionIntegrator;
 import com.tcvcog.tcvce.occupancy.integration.OccupancyIntegrator;
 import com.tcvcog.tcvce.util.Constants;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsActiveHiddenListsEnum;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsEventRulesEnum;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsProposalsEnum;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -102,7 +97,6 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
 
     private OccInspection currentInspection;
     private OccPeriod currentOccPeriod;
-    private ProposalOccPeriod currentProposal;
     private PropertyUnitWithProp currentPropertyUnit;
     private Property currentProperty;
     
@@ -113,11 +107,13 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     private OccLocationDescriptor selectedLocation;
     private List<OccLocationDescriptor> workingLocationList;
     
+    private boolean periodStartDateNull;
+    private boolean periodEndDateNull;
+    
     private List<OccChecklistTemplate> inspectionTemplateCandidateList;
     private OccChecklistTemplate selectedInspectionTemplate;
     
     private List<OccPeriodType> occPeriodTypeList;
-    private List<OccEvent> filteredEventList;
     
     private List<OccInspectedSpace> visibleInspectedSpaceList;
     private boolean includeSpacesWithNoElements;
@@ -128,8 +124,8 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     private List<OccSpace> spacesInTypeList;
     private List<OccSpaceElement> elementsInSpaceList;
     
+    private List<OccInspectionStatusEnum> inspectedElementAddValueCandidateList;
     private OccInspectionStatusEnum selectedInspectedElementAddValue;
-    private OccInspectionStatusEnum[] inspectedElementAddValueCandidateList;
     private boolean markNewlyAddedSpacesWithCompliance;
     private boolean promptForSpaceLocationUponAdd;
     
@@ -143,18 +139,37 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     private PropertyUnit selectedPropertyUnit;
     private OccPeriodType selectedOccPeriodType;
     
+    // proposals
+    private ProposalOccPeriod currentProposal;
+    private List<ViewOptionsProposalsEnum> proposalsViewOptions;
+    private ViewOptionsProposalsEnum selectedProposalsViewOption;
+    
+    // rules
+    private EventRuleAbstract currentEventRuleAbstract;
+    private List<EventRuleSet> eventRuleSetList;
+    private EventRuleSet selectedEventRuleSet;
+    private int formEventRuleIDToAdd;
+    private boolean includeEventRuleInCurrentOccPeriodTemplate;
+    private List<ViewOptionsEventRulesEnum> rulesViewOptions;
+    private ViewOptionsEventRulesEnum selectedRulesViewOption;
+    
     // reports
     private ReportConfigOccInspection reportConfigOccInspec;
-    private OccInspectionViewOptions[] itemFilterOptions;
+    private List<ViewOptionsOccChecklistItemsEnum> itemFilterOptions;
     
     private OccPermit currentOccPermit;
     private ReportConfigOccPermit reportConfigOccPermit;
     
     // events 
     private OccEvent currentEvent;
-    private List<EventType> availableEventTypeList; 
+    private List<Event> filteredEventList;
+    private List<ViewOptionsActiveHiddenListsEnum> eventsViewOptions;
+    private ViewOptionsActiveHiddenListsEnum selectedEventView;
+    private List<EventType> eventTypeListUserAllowed; 
+    private List<EventType> eventTypeListAll;
     private EventType selectedEventType;
-    private List<EventCategory> eventCategoryList;
+    private List<EventCategory> eventCategoryListUserAllowed;
+    private List<EventCategory> eventCategoryListAllActive;
     private EventCategory selectedEventCategory;
     private List<Person> personCandidateList;
     private Person selectedPerson;
@@ -171,6 +186,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         PropertyIntegrator pi = getPropertyIntegrator();
         OccupancyCoordinator oc = getOccupancyCoordinator();
         OccInspectionIntegrator oii = getOccInspectionIntegrator();
+        EventCoordinator ec = getEventCoordinator();
         
         // set our blank lists used only by elements on this page
         spacesInTypeList = new ArrayList<>();
@@ -183,7 +199,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
                 currentPropertyUnit = pi.getPropertyUnitWithProp(currentOccPeriod.getPropertyUnitID());
                 // all inspected spaces are visible by default
                 if(currentInspection != null){
-                    currentInspection.setViewSetting(OccInspectionViewOptions.ALL_ITEMS);
+                    currentInspection.setViewSetting(ViewOptionsOccChecklistItemsEnum.ALL_ITEMS);
                 }
             }
         
@@ -208,8 +224,19 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
             System.out.println(ex);
         }
         
-        availableEventTypeList = oc.getPermittedEventTypes(currentOccPeriod, getSessionBean().getSessionUser());
-        occPeriodTypeList = getSessionBean().getSessionMuni().getProfile().getOccPeriodTypeList();
+        
+        // general setting of drop-down box lists
+        try {
+            eventTypeListUserAllowed = ec.getPermittedEventTypesForOcc(currentOccPeriod, getSessionBean().getSessionUser());
+            eventTypeListAll = new ArrayList();
+            eventTypeListAll = ec.getEventTypesAll();
+            eventCategoryListAllActive = ec.getEventCategoryListActive();
+            occPeriodTypeList = getSessionBean().getSessionMuni().getProfile().getOccPeriodTypeList();
+            currentEventRuleAbstract = ec.rules_getInitializedEventRuleAbstract();
+            eventRuleSetList = ec.rules_getEventRuleSetList();
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+        }
         
         if(workingLocationList == null){
             workingLocationList = new ArrayList<>();
@@ -226,8 +253,18 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
             personCandidateList.addAll(getSessionBean().getSessionPersonList());
         }
         
-        itemFilterOptions = OccInspectionViewOptions.values();
-        inspectedElementAddValueCandidateList = OccInspectionStatusEnum.values();
+        
+        itemFilterOptions = Arrays.asList(ViewOptionsOccChecklistItemsEnum.values());
+        inspectedElementAddValueCandidateList = Arrays.asList(OccInspectionStatusEnum.values());
+        
+        proposalsViewOptions = Arrays.asList(ViewOptionsProposalsEnum.values());
+        selectedProposalsViewOption = ViewOptionsProposalsEnum.VIEW_ALL;
+        
+        eventsViewOptions = Arrays.asList(ViewOptionsActiveHiddenListsEnum.values());
+        selectedEventView = ViewOptionsActiveHiddenListsEnum.VIEW_ALL;
+        
+        rulesViewOptions = Arrays.asList(ViewOptionsEventRulesEnum.values());
+        selectedRulesViewOption = ViewOptionsEventRulesEnum.VIEW_ALL;
         
         
         try {
@@ -240,6 +277,9 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         } catch (IntegrationException ex) {
             System.out.println(ex);
         }
+        
+        periodEndDateNull = false;
+        periodStartDateNull = false;
     }
     
     public void loadSpacesInType(){
@@ -254,6 +294,11 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
             elementsInSpaceList = selectedOccSpace.getSpaceElementList();
             System.out.println("OccInspectionBB.loadElementsInSpace");
         }
+    }
+
+    // TODO: finish me
+    public void deletePhoto(int photoID){
+        
     }
     
     /**
@@ -310,10 +355,11 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     }
     
     public void initializeSpaceAdd(ActionEvent ev){
+        // does this need to be nothing?
         
     }
     
-    public void activateOccInspection(OccInspection ins){
+    public void checklistAction_activateOccInspection(OccInspection ins){
         OccupancyCoordinator oc = getOccupancyCoordinator();
         if(getSessionBean().getSessionUser().getKeyCard().isHasEnfOfficialPermissions()){
             try {
@@ -335,7 +381,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         OccupancyCoordinator oc = getOccupancyCoordinator();
         EventIntegrator ei = getEventIntegrator();
         try {
-            eventCategoryList = ei.getEventCategoryList(selectedEventType);
+            eventCategoryListUserAllowed = ei.getEventCategoryList(selectedEventType);
         } catch (IntegrationException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null,
@@ -398,6 +444,20 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         reloadCurrentOccPeriod();
     }    
     
+    public void proposals_clearProposal(Proposal p){
+        ChoiceCoordinator cc = getChoiceCoordinator();
+         System.out.println("OccInspectionBB.clearChoice");
+        try {
+            cc.clearProposalEvaluation(p, getSessionBean().getSessionUser());
+            
+        } catch (CaseLifecycleException | IntegrationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR, 
+            ex.getMessage(), ""));
+        }
+        reloadCurrentOccPeriod();
+    }    
+    
     private void reloadCurrentInspection(){
         OccInspectionIntegrator oii = getOccInspectionIntegrator();
         try {
@@ -419,7 +479,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     private void reloadCurrentOccPeriod(){
         OccupancyIntegrator oi = getOccupancyIntegrator();
         try {
-            oi.getOccPeriod(currentOccPeriod.getPeriodID(), getSessionBean().getSessionUser());
+            currentOccPeriod = oi.getOccPeriod(currentOccPeriod.getPeriodID(), getSessionBean().getSessionUser());
             getFacesContext().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO,
                 "Reloaded occ period ID " + currentOccPeriod.getPeriodID(), ""));
@@ -474,16 +534,16 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     }
     
     public void filterChecklist_failedItems(ActionEvent ev){
-        currentInspection.setViewSetting(OccInspectionViewOptions.FAILED_ITEMS_ONLY);
+        currentInspection.setViewSetting(ViewOptionsOccChecklistItemsEnum.FAILED_ITEMS_ONLY);
 //        currentInspection.configureVisibleSpaceElementList();
     }
     
     public void filterChecklist_uninspectedItems(ActionEvent ev){
-        currentInspection.setViewSetting(OccInspectionViewOptions.UNISPECTED_ITEMS_ONLY);
+        currentInspection.setViewSetting(ViewOptionsOccChecklistItemsEnum.UNISPECTED_ITEMS_ONLY);
     }
     
     public void filterChecklist_allItems(ActionEvent ev){
-        currentInspection.setViewSetting(OccInspectionViewOptions.ALL_ITEMS);
+        currentInspection.setViewSetting(ViewOptionsOccChecklistItemsEnum.ALL_ITEMS);
     }
     
     
@@ -535,7 +595,6 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     public void events_initiateNewEvent() {
 
         if (getSelectedEventCategory() != null) {
-
             System.out.println("OccInspectionBB.initiateNewEvent | category: " + getSelectedEventCategory().getEventCategoryTitle());
             EventCoordinator ec = getEventCoordinator();
             try {
@@ -556,6 +615,59 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     }
     
     public void initiateEventEdit(OccEvent ev){
+        currentEvent = ev;
+    }
+    
+    public void rules_initiateEventRuleCreate(ActionEvent ev){
+        EventCoordinator ec = getEventCoordinator();
+        currentEventRuleAbstract = ec.rules_getInitializedEventRuleAbstract();
+    }
+    
+    public void rules_initiateEventRuleEdit(EventRuleAbstract era){
+        currentEventRuleAbstract = era;
+        
+    }
+    
+    public void rules_commitEventRuleEdits(ActionEvent ev){
+        EventCoordinator ec = getEventCoordinator();
+        try {
+            ec.rules_updateEventRuleAbstract(currentEventRuleAbstract);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                "Update of event rule successful!", ""));
+            reloadCurrentOccPeriod();
+        } catch (IntegrationException ex) {
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                ex.getMessage(), ""));
+        }
+    }
+    
+    public void rules_commitEventRuleCreate(ActionEvent ev){
+        EventCoordinator ec = getEventCoordinator();
+        int freshEventRuleID;
+        try {
+            freshEventRuleID = ec.rules_addNewEventRuleAbstract(currentEventRuleAbstract, currentOccPeriod, null, includeEventRuleInCurrentOccPeriodTemplate);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                "New event rule added with ID " + freshEventRuleID, ""));
+            System.out.println("OccInspectionBB.commiteventRuleCreate");
+            reloadCurrentOccPeriod();
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                ex.getMessage(), ""));
+        }
+    }
+    
+    
+    public void rules_addEventRuleByID(ActionEvent ev){
+        EventCoordinator ec = getEventCoordinator();
+    }
+    
+    public void rules_addEventRuleSet(EventRuleSet ers){
+        EventCoordinator ec = getEventCoordinator();
         
     }
     
@@ -577,11 +689,13 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
         
     }
     
-    public void implementNewInspectionChecklist(ActionEvent ev){
+    public void checklistAction_implementNewInspectionChecklist(ActionEvent ev){
         if(selectedInspectionTemplate != null){
             OccupancyCoordinator oc = getOccupancyCoordinator();
             try {
-                oc.inspectionAction_commenceOccupancyInspection(null, selectedInspectionTemplate, currentOccPeriod, getSessionBean().getSessionUser());
+                oc.activateOccInspection(oc.inspectionAction_commenceOccupancyInspection(null, selectedInspectionTemplate, currentOccPeriod, getSessionBean().getSessionUser()));
+                reloadCurrentOccPeriod();
+                reloadCurrentInspection();
                 getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO,
                     "Success! Created new inspection.", ""));
@@ -591,13 +705,10 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
                     ex.getMessage(), ""));
             }
-            reloadCurrentOccPeriod();
-            reloadCurrentInspection();
         } else {
                 getFacesContext().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR,
                     "Please select an inspection template!", ""));
-            
         }
     }
     
@@ -921,6 +1032,9 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
                 }
                 break;
             case "startdate":
+                if(periodStartDateNull){
+                    currentOccPeriod.setStartDate(null);
+                }
                 currentOccPeriod.setStartDateCertifiedBy(u);
                 currentOccPeriod.setStartDateCertifiedTS(now);
                 if(certifymode.equals("withdraw")){
@@ -929,6 +1043,9 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
                 }
                 break;
             case "enddate":
+                if(periodEndDateNull){
+                    currentOccPeriod.setEndDate(null);
+                }
                 currentOccPeriod.setEndDateCertifiedBy(u);
                 currentOccPeriod.setEndDateCertifiedTS(now);
                 if(certifymode.equals("withdraw")){
@@ -1014,6 +1131,23 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
                 new FacesMessage(FacesMessage.SEVERITY_ERROR,
                 ex.getMessage(), ""));
         }
+     }
+     
+     public void addNewEventRule(ActionEvent ev) {
+         EventCoordinator ec = getEventCoordinator();
+        try {
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO,
+                "Added new event rule!", ""));
+            ec.rules_attachEventRule(formEventRuleIDToAdd, getSessionBean().getSessionUser());
+        } catch (IntegrationException ex) {
+            System.out.println(ex);
+            getFacesContext().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                "Could not attach the new event rule", ""));
+            
+        }
+        
      }
     
      /**
@@ -1207,14 +1341,14 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     /**
      * @return the filteredEventList
      */
-    public List<OccEvent> getFilteredEventList() {
+    public List<Event> getFilteredEventList() {
         return filteredEventList;
     }
 
     /**
      * @param filteredEventList the filteredEventList to set
      */
-    public void setFilteredEventList(List<OccEvent> filteredEventList) {
+    public void setFilteredEventList(List<Event> filteredEventList) {
         this.filteredEventList = filteredEventList;
     }
 
@@ -1233,31 +1367,31 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     }
 
     /**
-     * @return the availableEventTypeList
+     * @return the eventTypeListUserAllowed
      */
-    public List<EventType> getAvailableEventTypeList() {
-        return availableEventTypeList;
+    public List<EventType> getEventTypeListUserAllowed() {
+        return eventTypeListUserAllowed;
     }
 
     /**
-     * @param availableEventTypeList the availableEventTypeList to set
+     * @param eventTypeListUserAllowed the eventTypeListUserAllowed to set
      */
-    public void setAvailableEventTypeList(List<EventType> availableEventTypeList) {
-        this.availableEventTypeList = availableEventTypeList;
+    public void setEventTypeListUserAllowed(List<EventType> eventTypeListUserAllowed) {
+        this.eventTypeListUserAllowed = eventTypeListUserAllowed;
     }
 
     /**
-     * @return the eventCategoryList
+     * @return the eventCategoryListUserAllowed
      */
-    public List<EventCategory> getEventCategoryList() {
-        return eventCategoryList;
+    public List<EventCategory> getEventCategoryListUserAllowed() {
+        return eventCategoryListUserAllowed;
     }
 
     /**
-     * @param eventCategoryList the eventCategoryList to set
+     * @param eventCategoryListUserAllowed the eventCategoryListUserAllowed to set
      */
-    public void setEventCategoryList(List<EventCategory> eventCategoryList) {
-        this.eventCategoryList = eventCategoryList;
+    public void setEventCategoryListUserAllowed(List<EventCategory> eventCategoryListUserAllowed) {
+        this.eventCategoryListUserAllowed = eventCategoryListUserAllowed;
     }
 
     /**
@@ -1572,14 +1706,14 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     /**
      * @return the itemFilterOptions
      */
-    public OccInspectionViewOptions[] getItemFilterOptions() {
+    public List<ViewOptionsOccChecklistItemsEnum> getItemFilterOptions() {
         return itemFilterOptions;
     }
 
     /**
      * @param itemFilterOptions the itemFilterOptions to set
      */
-    public void setItemFilterOptions(OccInspectionViewOptions[] itemFilterOptions) {
+    public void setItemFilterOptions(List<ViewOptionsOccChecklistItemsEnum> itemFilterOptions) {
         this.itemFilterOptions = itemFilterOptions;
     }
 
@@ -1628,15 +1762,218 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     /**
      * @return the inspectedElementAddValueCandidateList
      */
-    public OccInspectionStatusEnum[] getInspectedElementAddValueCandidateList() {
+    public List<OccInspectionStatusEnum> getInspectedElementAddValueCandidateList() {
         return inspectedElementAddValueCandidateList;
     }
 
     /**
      * @param inspectedElementAddValueCandidateList the inspectedElementAddValueCandidateList to set
      */
-    public void setInspectedElementAddValueCandidateList(OccInspectionStatusEnum[] inspectedElementAddValueCandidateList) {
+    public void setInspectedElementAddValueCandidateList(List<OccInspectionStatusEnum> inspectedElementAddValueCandidateList) {
         this.inspectedElementAddValueCandidateList = inspectedElementAddValueCandidateList;
+    }
+
+    /**
+     * @return the periodStartDateNull
+     */
+    public boolean isPeriodStartDateNull() {
+        return periodStartDateNull;
+    }
+
+    /**
+     * @return the periodEndDateNull
+     */
+    public boolean isPeriodEndDateNull() {
+        return periodEndDateNull;
+    }
+
+    /**
+     * @param periodStartDateNull the periodStartDateNull to set
+     */
+    public void setPeriodStartDateNull(boolean periodStartDateNull) {
+        this.periodStartDateNull = periodStartDateNull;
+    }
+
+    /**
+     * @param periodEndDateNull the periodEndDateNull to set
+     */
+    public void setPeriodEndDateNull(boolean periodEndDateNull) {
+        this.periodEndDateNull = periodEndDateNull;
+    }
+
+    /**
+     * @return the formEventRuleIDToAdd
+     */
+    public int getFormEventRuleIDToAdd() {
+        return formEventRuleIDToAdd;
+    }
+
+    /**
+     * @param formEventRuleIDToAdd the formEventRuleIDToAdd to set
+     */
+    public void setFormEventRuleIDToAdd(int formEventRuleIDToAdd) {
+        this.formEventRuleIDToAdd = formEventRuleIDToAdd;
+    }
+
+    /**
+     * @return the currentEventRuleAbstract
+     */
+    public EventRuleAbstract getCurrentEventRuleAbstract() {
+        return currentEventRuleAbstract;
+    }
+
+    /**
+     * @param currentEventRuleAbstract the currentEventRuleAbstract to set
+     */
+    public void setCurrentEventRuleAbstract(EventRuleAbstract currentEventRuleAbstract) {
+        this.currentEventRuleAbstract = currentEventRuleAbstract;
+    }
+
+    /**
+     * @return the includeEventRuleInCurrentOccPeriodTemplate
+     */
+    public boolean isIncludeEventRuleInCurrentOccPeriodTemplate() {
+        return includeEventRuleInCurrentOccPeriodTemplate;
+    }
+
+    /**
+     * @param includeEventRuleInCurrentOccPeriodTemplate the includeEventRuleInCurrentOccPeriodTemplate to set
+     */
+    public void setIncludeEventRuleInCurrentOccPeriodTemplate(boolean includeEventRuleInCurrentOccPeriodTemplate) {
+        this.includeEventRuleInCurrentOccPeriodTemplate = includeEventRuleInCurrentOccPeriodTemplate;
+    }
+
+    /**
+     * @return the eventCategoryListAllActive
+     */
+    public List<EventCategory> getEventCategoryListAllActive() {
+        return eventCategoryListAllActive;
+    }
+
+    /**
+     * @param eventCategoryListAllActive the eventCategoryListAllActive to set
+     */
+    public void setEventCategoryListAllActive(List<EventCategory> eventCategoryListAllActive) {
+        this.eventCategoryListAllActive = eventCategoryListAllActive;
+    }
+
+    /**
+     * @return the eventTypeListAll
+     */
+    public List<EventType> getEventTypeListAll() {
+        return eventTypeListAll;
+    }
+
+    /**
+     * @param eventTypeListAll the eventTypeListAll to set
+     */
+    public void setEventTypeListAll(List<EventType> eventTypeListAll) {
+        this.eventTypeListAll = eventTypeListAll;
+    }
+
+    /**
+     * @return the eventsViewOptions
+     */
+    public List<ViewOptionsActiveHiddenListsEnum> getEventsViewOptions() {
+        return eventsViewOptions;
+    }
+
+    /**
+     * @return the selectedEventView
+     */
+    public ViewOptionsActiveHiddenListsEnum getSelectedEventView() {
+        return selectedEventView;
+    }
+
+    /**
+     * @param selectedEventView the selectedEventView to set
+     */
+    public void setSelectedEventView(ViewOptionsActiveHiddenListsEnum selectedEventView) {
+        this.selectedEventView = selectedEventView;
+    }
+
+    /**
+     * @return the proposalsViewOptions
+     */
+    public List<ViewOptionsProposalsEnum> getProposalsViewOptions() {
+        return proposalsViewOptions;
+    }
+
+    /**
+     * @return the selectedProposalsViewOption
+     */
+    public ViewOptionsProposalsEnum getSelectedProposalsViewOption() {
+        return selectedProposalsViewOption;
+    }
+
+    /**
+     * @return the rulesViewOptions
+     */
+    public List<ViewOptionsEventRulesEnum> getRulesViewOptions() {
+        return rulesViewOptions;
+    }
+
+    /**
+     * @return the selectedRulesViewOption
+     */
+    public ViewOptionsEventRulesEnum getSelectedRulesViewOption() {
+        return selectedRulesViewOption;
+    }
+
+    /**
+     * @param proposalsViewOptions the proposalsViewOptions to set
+     */
+    public void setProposalsViewOptions(List<ViewOptionsProposalsEnum> proposalsViewOptions) {
+        this.proposalsViewOptions = proposalsViewOptions;
+    }
+
+    /**
+     * @param selectedProposalsViewOption the selectedProposalsViewOption to set
+     */
+    public void setSelectedProposalsViewOption(ViewOptionsProposalsEnum selectedProposalsViewOption) {
+        this.selectedProposalsViewOption = selectedProposalsViewOption;
+    }
+
+    /**
+     * @param rulesViewOptions the rulesViewOptions to set
+     */
+    public void setRulesViewOptions(List<ViewOptionsEventRulesEnum> rulesViewOptions) {
+        this.rulesViewOptions = rulesViewOptions;
+    }
+
+    /**
+     * @param selectedRulesViewOption the selectedRulesViewOption to set
+     */
+    public void setSelectedRulesViewOption(ViewOptionsEventRulesEnum selectedRulesViewOption) {
+        this.selectedRulesViewOption = selectedRulesViewOption;
+    }
+
+    /**
+     * @return the eventRuleSetList
+     */
+    public List<EventRuleSet> getEventRuleSetList() {
+        return eventRuleSetList;
+    }
+
+    /**
+     * @param eventRuleSetList the eventRuleSetList to set
+     */
+    public void setEventRuleSetList(List<EventRuleSet> eventRuleSetList) {
+        this.eventRuleSetList = eventRuleSetList;
+    }
+
+    /**
+     * @return the selectedEventRuleSet
+     */
+    public EventRuleSet getSelectedEventRuleSet() {
+        return selectedEventRuleSet;
+    }
+
+    /**
+     * @param selectedEventRuleSet the selectedEventRuleSet to set
+     */
+    public void setSelectedEventRuleSet(EventRuleSet selectedEventRuleSet) {
+        this.selectedEventRuleSet = selectedEventRuleSet;
     }
 
     

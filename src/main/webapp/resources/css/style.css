@@ -351,7 +351,7 @@ div.headerLink a:before, a:visited{
 /************** END LINKS ******************/
 
 
-/************** START PAGE LAYOUT  ******************/
+/* ------------------- START PAGE LAYOUT  ------------------- */
 
 
 
@@ -391,6 +391,7 @@ div.headerLink a:before, a:visited{
     
 }
 
+/* **************** END PAGE LAYOUT  *********************/
 
 
 /* ----------- Printing and reports-------- */
@@ -466,6 +467,12 @@ div.printer-friendly-report .ui-widget-content{
     font-weight: bold;
     font-family: monospace;
 }
+
+.reportconfig-header{
+    text-align: left;
+    
+}
+/* *********** end Printing and reports******** */
 
 
 
@@ -956,6 +963,22 @@ img.headerImg{
 /*************** END IMAGES ****************************/
 
 
+
+/* ------------------ Primefaces Overrides ----------------------*/
+
+
+.ui-widget, .ui-widget .ui-widget {
+    font-size: 90% !important;
+}
+
+
+.ui-state-hover{
+    
+}
+
+/* ****************** END Primefaces Overrides ***********************/
+
+
 /* ------------------DASHBOARD STYLES ----------------------*/
 
 .bignum{
@@ -974,10 +997,9 @@ img.headerImg{
 
 
 
-.ui-panel, div.ui-state-hover {
+.ui-panel {
                 margin: 10px;
-                
-            }
+}
              
 .ui-dashboard-column {
     width:33%;
@@ -989,16 +1011,17 @@ img.headerImg{
 }
 
 
-.ui-widget, .ui-widget .ui-widget {
-    font-size: 90% !important;
-}
-
-
 
 /*************** END DASHBOARD ****************************/
 
 
 /* ------------------TABLE STYLES ----------------------*/
+
+
+.td-dense{
+    padding: 1px;
+    margin: 0px;
+}
 
 .cases-report-citations-2cols{
     width: 50%;
@@ -1074,7 +1097,7 @@ tr.reinspect{
 .gridTd {
     border: none;
     vertical-align: top;
-    padding: 10px;
+    padding: 7px;
 }
 
 .topbottom-lines-left{
@@ -1163,6 +1186,10 @@ gridTd-bignum{
 .ui-state-hover{
     
     
+}
+
+.full-width{
+    width:100%;
 }
 
 .hover-none:hover{
@@ -1480,6 +1507,9 @@ i.inspection-notinspected{
 
 
 /* ****************** CLOSE INSPECTION AND OCC PERMIT********************/
+
+
+
 
 /* -------------------- MISC --------------------------------- */
 

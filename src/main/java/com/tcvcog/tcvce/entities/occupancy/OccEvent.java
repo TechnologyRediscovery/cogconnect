@@ -13,7 +13,10 @@ import java.io.Serializable;
  *
  * @author sylvia
  */
-public class OccEvent extends Event implements Serializable {
+public class OccEvent 
+        extends Event 
+        implements Serializable {
+    
     private int occPeriodID;
     
     public OccEvent(Event ev){

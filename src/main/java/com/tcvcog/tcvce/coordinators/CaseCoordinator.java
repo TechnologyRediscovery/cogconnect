@@ -43,6 +43,7 @@ import com.tcvcog.tcvce.integration.MunicipalityIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
 import com.tcvcog.tcvce.integration.SystemIntegrator;
 import com.tcvcog.tcvce.util.Constants;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsEventRulesEnum;
 import java.io.Serializable;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -114,8 +115,8 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
             cse.setProposalList(new ArrayList<Proposal>());
         }
         
-        if(cse.getEventRuleList() == null){
-            cse.setEventRuleList(new ArrayList<EventRuleAbstract>());
+        if(cse.assembleEventRuleList(ViewOptionsEventRulesEnum.VIEW_ALL) == null){
+            cse.setEventRuleList(new ArrayList<EventRuleImplementation>());
         }
         
         if(cse.getCitationList() == null){
@@ -493,7 +494,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         if(cc.determineProposalEvaluatability(proposal, chosen, u)){
             // since we can evaluate this proposal with the chosen Proposable, configure members
             proposal.setResponderActual(u);
-            proposal.setResponseTimestamp(LocalDateTime.now());
+            proposal.setResponseTS(LocalDateTime.now());
             proposal.setChosenChoice(chosen);
             
             // ask the EventCoord for a nicely formed Event, which we cast to OccEvent
@@ -527,40 +528,6 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
 //        
     }
    
-   
-    
-     /**
-     * Implements business rules for determining which event types are allowed
-     * to be attached to the given CECase based on the case's phase and the
-     * user's permissions in the system.
-     * 
-     * Used for displaying the appropriate event types to the user on the
-     * cecases.xhtml page
-     * 
-     * @param c the CECase on which the event would be attached
-     * @param u the User doing the attaching
-     * @return allowed EventTypes for attaching to the given case
-     */
-    public List<EventType> getPermittedEventTypesForCECase(CECase c, User u){
-        List<EventType> typeList = new ArrayList<>();
-        RoleType role = u.getRoleType();
-        
-        if(role == RoleType.EnforcementOfficial 
-                || u.getRoleType() == RoleType.Developer){
-            typeList.add(EventType.Action);
-            typeList.add(EventType.Timeline);
-        }
-        
-        if(role != RoleType.MuniReader){
-            typeList.add(EventType.Communication);
-            typeList.add(EventType.Meeting);
-            typeList.add(EventType.Custom);
-        }
-        return typeList;
-    }
-    
-   
-    
     /**
      * Iterates over all of a case's violations and checks for compliance. 
      * If all of the violations have a compliance date, the case is automatically

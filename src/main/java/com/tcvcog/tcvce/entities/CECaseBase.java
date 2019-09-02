@@ -9,7 +9,9 @@ import com.tcvcog.tcvce.domain.CaseLifecycleException;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Objects;
+import com.tcvcog.tcvce.application.interfaces.IFace_EventRuleGoverned;
 
 /**
  *
@@ -17,7 +19,8 @@ import java.util.Objects;
  */
 public class CECaseBase 
         extends EntityUtils 
-        implements Serializable, Cloneable {
+        implements Serializable, 
+                    Cloneable{
     
     protected int caseID;
     protected int publicControlCode;
@@ -403,5 +406,7 @@ public class CECaseBase
     public void setSource(BOBSource source) {
         this.source = source;
     }
+
+  
 
 }

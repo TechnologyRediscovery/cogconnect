@@ -17,6 +17,7 @@ Council of Governments, PA
  */
 package com.tcvcog.tcvce.entities;
 
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsActiveHiddenListsEnum;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -24,12 +25,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- *
- * @author Eric C. Darsow
+ * Superclass of the entire Event family! The father of all Events.
+ * @author Ellen Baskem
  */
 public class Event 
         extends EntityUtils 
-        implements Serializable, Comparable<Event> {
+        implements  Serializable, 
+                    Comparable<Event>{
     
     protected int eventID;
     
@@ -55,6 +57,8 @@ public class Event
     protected List<Person> personList;
     
     protected long daysUntilDue;
+    
+    
     
     /**
      * @return the eventID
@@ -388,8 +392,5 @@ public class Event
         return true;
     }
 
-
-    
-
-    
+   
 }

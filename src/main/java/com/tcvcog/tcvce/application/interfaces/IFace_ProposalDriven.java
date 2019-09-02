@@ -14,24 +14,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.tcvcog.tcvce.entities.occupancy;
+package com.tcvcog.tcvce.application.interfaces;
+
+import com.tcvcog.tcvce.entities.Proposal;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsProposalsEnum;
+import java.util.List;
 
 /**
- *
- * @author sylvia
+ * Delimits a way to query, insert, extract, and manipulate Proposal objects
+ * by specifically--at the time of this class creation--CECase and Occperiod objects.
+ * 
+ * @author Ellen Baskem
  */
-public enum OccInspectionViewOptions {
-    FAILED_ITEMS_ONLY("Failed items only"),
-    UNISPECTED_ITEMS_ONLY("Uninspected items only"),
-    ALL_ITEMS("All items");
+public interface IFace_ProposalDriven {
     
-     private final String label;
-     
-     private OccInspectionViewOptions(String l){
-         this.label = l;
-     }
-     
-     public String getLabel(){
-         return label;
-     }
+    /**
+     *
+     * @param propList
+     */
+    public void setProposalList(List<Proposal> propList);
+    
+    public List<Proposal> assembleProposalList(ViewOptionsProposalsEnum vope); 
+    
 }

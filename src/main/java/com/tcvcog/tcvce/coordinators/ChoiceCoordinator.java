@@ -189,7 +189,7 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
                 // configure our proposal for rejection
                 p.setProposalRejected(true);
                 p.setResponderActual(u);
-                p.setResponseTimestamp(LocalDateTime.now());
+                p.setResponseTS(LocalDateTime.now());
                 p.setHidden(true);
                 // send the updates to the integrator
                 ci.updateProposal(p);
@@ -199,5 +199,19 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
         } else {
             throw new AuthorizationException("You do not have sufficient privileges to reject this propsoal");
         }
+    }
+    
+    
+    
+    public void clearProposalEvaluation(Proposal p, User u) throws IntegrationException, CaseLifecycleException{
+        ChoiceIntegrator ci = getChoiceIntegrator();
+        if(p.isReadOnlyCurrentUser()){
+            throw new CaseLifecycleException("User cannot clear a proposal they cannot evaluate");
+        }
+        p.setResponseTS(null);
+        p.setResponderActual(null);
+        p.setResponseEvent(null);
+        p.setProposalRejected(false);
+        ci.updateProposal(p);
     }
 }

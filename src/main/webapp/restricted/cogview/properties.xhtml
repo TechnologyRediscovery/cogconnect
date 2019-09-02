@@ -325,8 +325,6 @@
                                         <h:outputText value="#{unit.notes}" />
 
                                         <h4>Occupancy periods</h4>
-
-                                      
                                         
                                         <p:commandButton       id="properties-occperiods-button-addnewperiod"
                                                                ajax="true" 
@@ -340,51 +338,77 @@
 
                                         <p:spacer height="5px" />
 
-                                        <p:dataScroller
-                                            id="scroller-periodlist"
-                                            widgetVar="var-scroller-periodlist"
+                                        <p:dataTable
+                                            id="propunits-occperiod-table"
+                                            widgetVar="propunits-occperiod-table-var"
                                             rowIndexVar="#{period.periodID}"
                                             var="period"
                                             value="#{unit.periodList}"
+                                            tableStyleClass="primeDataTable"
+                                            draggableColumns="true"
+                                            expandedRow="false"
+                                            rowExpandMode="multiple"
+                                            resizableColumns="true"
                                             >                                         
-                                            
-                                            
-                                            <div style="datum">
-                                                
-                                                
-                                                <h:outputText value="Start Date: " 
-                                                              styleClass="ui-label-inline" />
-                                                
-                                                <h:outputText value="#{propertyProfileBB.getPrettyDate(period.startDate)}" 
+
+                                            <p:column width="5%">
+                                                <f:facet name="header">
+                                                    <h:outputText value="Period ID: " 
+                                                                  styleClass="ui-label-inline" />
+                                                </f:facet>
+                                                <h:outputText value="#{period.periodID}" 
                                                               styleClass="data-text"/>
-                                            </div>
-                                                
-                                            <div style="datum">
-                                                <h:outputText value="End Date: " 
+                                            </p:column>
+                                            
+                                            <p:column width="15%">
+                                                <f:facet name="header">
+                                                    <h:outputText value="Start Date: " 
+                                                                  styleClass="ui-label-inline" />
+                                                </f:facet>
+                                                    <h:outputText value="#{propertyProfileBB.getPrettyDate(period.startDate)}" 
+                                                                  styleClass="data-text"/>
+                                            </p:column>
+                                            
+                                            <p:column width="15%">
+                                                <f:facet name="header">
+                                                    <h:outputText value="End Date: " 
                                                               styleClass="ui-label-inline" />
-                                                
+                                                </f:facet>
                                                 <h:outputText value="#{propertyProfileBB.getPrettyDate(period.endDate)}" 
                                                               styleClass="data-text"/>
-                                            </div>
-                                            <div style="datum">
-                                                <h:outputText value="Type: " 
+                                            </p:column>
+                                            
+                                            <p:column width="15%">
+                                                <f:facet name="header">
+                                                    <h:outputText value="Type: " 
                                                               styleClass="ui-label-inline" />
-                                                <h:outputText value="#{period.type.title}" 
+                                                </f:facet>
+                                                <h:outputText value="#{period.type.title} (ID: #{period.type.typeID})" 
                                                               styleClass="data-text"/>
-                                            </div>
-                                            <div style="datum">
-                                                <h:outputText value="Authorization" 
+                                            </p:column>
+                                            
+                                            <p:column width="10%">
+                                                <f:facet name="header">
+                                                    <h:outputText value="Authorization" 
                                                               styleClass="ui-label-inline" />
+                                                </f:facet>
                                                 <h:outputText value="#{empty period.authorizedTS ? 'Unauthorized!' : propertyProfileBB.getPrettyDate(period.authorizedTS)}" />
-                                            </div>
+                                            </p:column>
+                                            <p:column width="5%">
+                                                
+                                                <f:facet name="header">
+                                                    <h:outputText value="Manage" 
+                                                              styleClass="ui-label-inline" />
+                                                </f:facet>
+                                            
                                                 <p:commandButton       id="button-occperiodtable-editperiod"
                                                                        ajax="false" 
                                                                        action="#{propertyProfileBB.manageOccPeriod(period)}"
                                                                        rendered="#{sessionBean.sessionUser.keyCard.hasMuniStaffPermissions}"
                                                                        value="manage occupancy period"  
                                                                        icon="fa fa-edit"/>
-                                               
-                                        </p:dataScroller>
+                                            </p:column>
+                                        </p:dataTable>
                                     </div>
                                 </p:dataScroller>
                             </h:form>
@@ -460,18 +484,13 @@
                                                          action="#{propertyProfileBB.viewCase(c)}" 
                                                          ajax="false"/>
                                     </p:column>
-
-
                                 </p:dataTable>
-
 
                                 <p:spacer height="10px"/>
                                 <hr/>
                                 <p:spacer height="10px"/>
 
-
                                 <h2 class="property-blue">Property Persons</h2>
-
 
                                 <p:dataTable
                                     id="prop-persons-datatable"
@@ -671,11 +690,7 @@
                                     </p:rowExpansion>
                                 </p:dataTable>
 
-
-
-
                                 <hr/>
-
 
                                 <h2>Existing Occupancy Inspection Cases</h2>
                                 <p>A really cool blank data table--More useful functionality coming soon!</p>
@@ -704,8 +719,6 @@
                                         globalOnly="true" showDetail="true" showSummary="true"
                                         warnClass="msgWarn" infoClass="msgInfo" fatalClass="msgFatal" errorClass="msgError">
                             </h:messages>
-                            
-                            
                             <h:outputLabel styleClass="ui-label" for="som-occperiodtype" value="Occupancy type" />
                             
                                 <p:selectOneMenu
@@ -730,15 +743,8 @@
                                              icon="fa fa-thumbs-o-up"
                                              value="Create new period" 
                                              tabindex="3"/>
-                            
-                                
-                            
-                            
                         </h:form>
                     </p:dialog>
-                            
-                            
-                            
                             
                     <p:dialog    id="dialog-unitedit"
                                  height="650" width="900"
@@ -849,7 +855,6 @@
                                 </p:column>
 
                             </p:dataTable>
-
 
                             <script type="text/javascript">
 

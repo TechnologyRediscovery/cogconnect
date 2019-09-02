@@ -1317,7 +1317,7 @@ public class OccInspectionIntegrator extends BackingBeanUtils implements Seriali
         
         List<OccInspection> inspecList = new ArrayList<>();
         
-        String query = "SELECT inspectionid FROM occinspection WHERE occperiod_periodid=? ";
+        String query = "SELECT inspectionid FROM occinspection WHERE occperiod_periodid=? ;";
         Connection con = getPostgresCon();
         ResultSet rs = null;
         PreparedStatement stmt = null;

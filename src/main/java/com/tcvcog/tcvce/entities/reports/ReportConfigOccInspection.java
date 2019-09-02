@@ -7,7 +7,7 @@ package com.tcvcog.tcvce.entities.reports;
 
 import com.tcvcog.tcvce.entities.Icon;
 import com.tcvcog.tcvce.entities.PropertyUnitWithProp;
-import com.tcvcog.tcvce.entities.occupancy.OccInspectionViewOptions;
+import com.tcvcog.tcvce.util.viewoptions.ViewOptionsOccChecklistItemsEnum;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
 import java.io.Serializable;
 
@@ -26,7 +26,7 @@ public class ReportConfigOccInspection
         
     private boolean includeOccPeriodInfoHeader;
     
-    private OccInspectionViewOptions viewSetting;
+    private ViewOptionsOccChecklistItemsEnum viewSetting;
     
     private boolean includePhotos_pass;
     private boolean includePhotos_fail;
@@ -188,14 +188,14 @@ public class ReportConfigOccInspection
     /**
      * @return the viewSetting
      */
-    public OccInspectionViewOptions getViewSetting() {
+    public ViewOptionsOccChecklistItemsEnum getViewSetting() {
         return viewSetting;
     }
 
     /**
      * @param viewSetting the viewSetting to set
      */
-    public void setViewSetting(OccInspectionViewOptions viewSetting) {
+    public void setViewSetting(ViewOptionsOccChecklistItemsEnum viewSetting) {
         this.viewSetting = viewSetting;
     }
 

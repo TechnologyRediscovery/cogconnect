@@ -36,11 +36,12 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
     protected boolean inactivateRuleOnEntityClose;
     
     protected Proposal promptingProposal;
-    
+    private int promptingProposalID_formOnly;
+   
     protected EventCategory triggeredECOnRulePass;
     protected EventCategory triggeredECOnRuleFail;
     
-    protected boolean active;
+    protected boolean activeRuleAbstract;
     protected String notes;
 
     /**
@@ -178,10 +179,10 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
     }
 
     /**
-     * @return the active
+     * @return the activeRuleAbstract
      */
-    public boolean isActive() {
-        return active;
+    public boolean isActiveRuleAbstract() {
+        return activeRuleAbstract;
     }
 
     /**
@@ -319,10 +320,10 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
     }
 
     /**
-     * @param active the active to set
+     * @param activeRuleAbstract the activeRuleAbstract to set
      */
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setActiveRuleAbstract(boolean activeRuleAbstract) {
+        this.activeRuleAbstract = activeRuleAbstract;
     }
 
     /**
@@ -379,6 +380,20 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
      */
     public int getForbiddenECThreshold_globalOrder() {
         return forbiddenECThreshold_globalOrder;
+    }
+
+    /**
+     * @return the promptingProposalID_formOnly
+     */
+    public int getPromptingProposalID_formOnly() {
+        return promptingProposalID_formOnly;
+    }
+
+    /**
+     * @param promptingProposalID_formOnly the promptingProposalID_formOnly to set
+     */
+    public void setPromptingProposalID_formOnly(int promptingProposalID_formOnly) {
+        this.promptingProposalID_formOnly = promptingProposalID_formOnly;
     }
 
     

@@ -23,12 +23,16 @@ import java.time.LocalDateTime;
  *
  * @author sylvia
  */
-public class EventRuleImplementation extends EventRuleAbstract implements Serializable{
+public class EventRuleImplementation 
+        extends EventRuleAbstract 
+        implements Serializable{
     
     protected LocalDateTime attachedTS;
     protected User attachedBy;
     protected LocalDateTime lastEvaluatedTS;
     protected LocalDateTime passedRuleTS;
+    private boolean activeRuleImp;
+    private boolean hidden;
     
     public EventRuleImplementation(EventRuleAbstract rule){
         
@@ -59,7 +63,7 @@ public class EventRuleImplementation extends EventRuleAbstract implements Serial
         this.triggeredECOnRulePass = rule.getTriggeredECOnRulePass();
         this.triggeredECOnRuleFail = rule.getTriggeredECOnRuleFail();
 
-        this.active = rule.isActive();
+        this.activeRuleAbstract = rule.isActiveRuleAbstract();
         this.notes = rule.getNotes();
     }
 
@@ -117,6 +121,34 @@ public class EventRuleImplementation extends EventRuleAbstract implements Serial
      */
     public void setPassedRuleTS(LocalDateTime passedRuleTS) {
         this.passedRuleTS = passedRuleTS;
+    }
+
+    /**
+     * @return the hidden
+     */
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    /**
+     * @param hidden the hidden to set
+     */
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    /**
+     * @return the activeRuleImp
+     */
+    public boolean isActiveRuleImp() {
+        return activeRuleImp;
+    }
+
+    /**
+     * @param activeRuleImp the activeRuleImp to set
+     */
+    public void setActiveRuleImp(boolean activeRuleImp) {
+        this.activeRuleImp = activeRuleImp;
     }
     
     

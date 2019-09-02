@@ -313,7 +313,7 @@ public class PropertyProfileBB extends BackingBeanUtils implements Serializable{
         OccupancyIntegrator oi = getOccupancyIntegrator();
         try {
             if(selectedOccPeriodType != null){
-                System.out.println("PropertyProfileBB.initateNewOccPeriod | selectedType: " + selectedOccPeriodType.getTypeid());
+                System.out.println("PropertyProfileBB.initateNewOccPeriod | selectedType: " + selectedOccPeriodType.getTypeID());
                 currOccPeriod = oc.initializeNewOccPeriod(  currProp, 
                                                             currPropUnit, 
                                                             selectedOccPeriodType,

@@ -155,7 +155,7 @@ public class PaymentIntegrator extends BackingBeanUtils implements Serializable 
 
         try {
             stmt = con.prepareStatement(query);
-            stmt.setInt(1, type.getTypeid());
+            stmt.setInt(1, type.getTypeID());
             rs = stmt.executeQuery();
             while (rs.next()) {
                 feeList.add(generateFee(rs));

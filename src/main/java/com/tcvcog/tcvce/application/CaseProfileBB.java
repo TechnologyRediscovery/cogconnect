@@ -541,7 +541,7 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
 
     public void commitEventEdits(ActionEvent ev) {
         EventCoordinator ec = getEventCoordinator();
-//        currentCase.getEventList().remove(selectedEvent);
+//        currentCase.assembleEventList().remove(selectedEvent);
         try {
             ec.editEvent(selectedEvent, getSessionBean().getSessionUser());
             getFacesContext().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_INFO,
@@ -1360,8 +1360,8 @@ public class CaseProfileBB extends BackingBeanUtils implements Serializable {
      * @return the availableEventList
      */
     public List<EventType> getAvailableEventTypeList() {
-        CaseCoordinator cc = getCaseCoordinator();
-        availableEventList = cc.getPermittedEventTypesForCECase(currentCase,
+        EventCoordinator ec = getEventCoordinator();
+        availableEventList = ec.getPermittedEventTypesForCECase(currentCase,
                 getSessionBean().getSessionUser());
         return availableEventList;
     }
