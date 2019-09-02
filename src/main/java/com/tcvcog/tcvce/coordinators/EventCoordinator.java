@@ -795,7 +795,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
                 OccPeriod op = (OccPeriod) rg;
                 rules_attachEventRuleAbstractToOccPeriod(era, op, usr);
                 if(freshObjectID != 0 && era.getPromptingProposal() != null){
-                    cc.
+                    // TODO: finish
                     
                 }
                 
