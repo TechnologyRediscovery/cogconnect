@@ -20,7 +20,6 @@ public class Proposal extends EntityUtils implements Serializable, Comparable<Pr
     protected int proposalID ;
     protected Directive directive;
     
-    protected int generatingEventID;
     protected boolean readOnlyCurrentUser;
     
     protected User initiator;
@@ -34,6 +33,7 @@ public class Proposal extends EntityUtils implements Serializable, Comparable<Pr
     protected boolean active;
     protected boolean hidden;
     
+    protected int generatingEventID;
     protected Event generatingEvent;
     protected Event responseEvent;
 

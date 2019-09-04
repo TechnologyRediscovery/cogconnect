@@ -17,21 +17,22 @@
 package com.tcvcog.tcvce.coordinators;
 
 import com.tcvcog.tcvce.application.BackingBeanUtils;
+import com.tcvcog.tcvce.application.interfaces.IFace_ProposalDriven;
 import com.tcvcog.tcvce.domain.AuthorizationException;
 import com.tcvcog.tcvce.domain.CaseLifecycleException;
 import com.tcvcog.tcvce.domain.EventException;
 import com.tcvcog.tcvce.domain.IntegrationException;
 import com.tcvcog.tcvce.entities.CECase;
+import com.tcvcog.tcvce.entities.Directive;
+import com.tcvcog.tcvce.entities.Event;
 import com.tcvcog.tcvce.entities.Openable;
 import com.tcvcog.tcvce.entities.Proposable;
 import com.tcvcog.tcvce.entities.Proposal;
 import com.tcvcog.tcvce.entities.ProposalCECase;
 import com.tcvcog.tcvce.entities.ProposalOccPeriod;
 import com.tcvcog.tcvce.entities.User;
-import com.tcvcog.tcvce.entities.UserWithAccessData;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
 import com.tcvcog.tcvce.integration.ChoiceIntegrator;
-import com.tcvcog.tcvce.occupancy.integration.OccupancyIntegrator;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Iterator;
@@ -144,7 +145,6 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
         if(proposal == null || chosen == null || u== null){
             return false;
         }
-        
         // our proposal must contain our desired choice
         if(!proposal.getDirective().getChoiceList().contains(chosen)){
             return false;
@@ -168,6 +168,56 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
         p.setHidden(true);
         ci.recordProposalEvaluation(p);
     }
+    
+    /**
+     * Takes in a Directive object and an OccPeriod or CECase and 
+     * implements that directive by assigning it via a Proposal given sensible initial values
+     * @param dir
+     * @param propDriven 
+     * @param ev 
+     * @throws com.tcvcog.tcvce.domain.IntegrationException 
+     */
+    public void implementDirective(Directive dir, IFace_ProposalDriven propDriven, Event ev) throws IntegrationException{
+        ChoiceIntegrator ci = getChoiceIntegrator();
+        Proposal pr = new Proposal();
+        pr.setDirective(dir);
+        if(dir.isActive()){
+            pr.setActive(true);
+            pr.setActivatesOn(LocalDateTime.now());
+            pr.setHidden(false);
+            pr.setProposalRejected(false);
+            pr.setOrder(0);
+        } else {
+            return;
+        }
+              
+        
+        if(ev != null){
+            pr.setGeneratingEvent(ev);
+            pr.setGeneratingEventID(ev.getEventID());
+        }
+        
+        if(propDriven instanceof OccPeriod){
+            OccPeriod op = (OccPeriod) propDriven;
+            if(!op.isOpen() && !dir.isApplyToClosedBOBs()){
+                return;
+            }
+            ProposalOccPeriod pop = new ProposalOccPeriod(pr);
+            pop.setOccperiodID(op.getPeriodID());
+            pop.setPeriod(op);
+            
+        } else if(propDriven instanceof CECase){
+            CECase cse = (CECase) propDriven;
+            if(!cse.isOpen() && !dir.isApplyToClosedBOBs()){
+                return;
+            }
+            ProposalCECase pcec = new ProposalCECase(pr);
+            pcec.setCeCase(cse);
+            pcec.setCeCaseID(cse.getCaseID());
+        }
+        ci.insertProposal(pr);
+    }
+    
     
     /**
      * Processes requests to reject a proposal by checking user rank, required status, 
@@ -200,8 +250,6 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
             throw new AuthorizationException("You do not have sufficient privileges to reject this propsoal");
         }
     }
-    
-    
     
     public void clearProposalEvaluation(Proposal p, User u) throws IntegrationException, CaseLifecycleException{
         ChoiceIntegrator ci = getChoiceIntegrator();

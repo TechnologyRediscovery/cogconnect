@@ -205,9 +205,6 @@ public class CECase
         } // if
         return proposalListVisible;
     }
-
-
-    
     
     /**
      * @param eventRuleList the eventRuleList to set
@@ -215,8 +212,6 @@ public class CECase
     public void setEventRuleList(List<EventRuleImplementation> eventRuleList) {
         this.eventRuleList = eventRuleList;
     }
-
-   
     
     /**
      * @return the violationList
@@ -420,8 +415,6 @@ public class CECase
         this.eventList = eventList;
     }
 
-  
-   
         
   
     

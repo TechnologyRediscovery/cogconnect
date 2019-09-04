@@ -29,7 +29,6 @@ import com.tcvcog.tcvce.entities.CasePhase;
 import com.tcvcog.tcvce.entities.EventRuleAbstract;
 import com.tcvcog.tcvce.entities.CodeViolation;
 import com.tcvcog.tcvce.entities.CECaseEvent;
-import com.tcvcog.tcvce.entities.Choice;
 import com.tcvcog.tcvce.entities.ChoiceEventCat;
 import com.tcvcog.tcvce.entities.EventCategory;
 import com.tcvcog.tcvce.entities.EventType;
@@ -43,7 +42,6 @@ import com.tcvcog.tcvce.entities.Proposal;
 import com.tcvcog.tcvce.entities.Municipality;
 import com.tcvcog.tcvce.entities.Person;
 import com.tcvcog.tcvce.entities.Proposable;
-import com.tcvcog.tcvce.entities.ProposalOccPeriod;
 import com.tcvcog.tcvce.entities.RoleType;
 import com.tcvcog.tcvce.entities.reports.ReportConfigCEEventList;
 import com.tcvcog.tcvce.entities.User;
@@ -52,10 +50,8 @@ import com.tcvcog.tcvce.entities.occupancy.OccEvent;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriodStatusEnum;
 import com.tcvcog.tcvce.entities.search.SearchParamsEventCECase;
-import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.EventIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
-import com.tcvcog.tcvce.integration.UserIntegrator;
 import java.io.Serializable;
 import com.tcvcog.tcvce.util.Constants;
 import com.tcvcog.tcvce.util.viewoptions.ViewOptionsActiveHiddenListsEnum;
@@ -609,8 +605,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
                     "The case phase has been changed", ""));
 
     } // close method
-
-   
     
     
     /**
@@ -660,9 +654,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
         }
         return ev;
     }
-    
-   
-    
     
     public void generateAndInsertManualCasePhaseOverrideEvent(CECase currentCase, CasePhase pastPhase) 
             throws IntegrationException, CaseLifecycleException, ViolationException{
@@ -788,20 +779,21 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      * @throws com.tcvcog.tcvce.domain.CaseLifecycleException if an IFaceEventRuleGoverned instances is neither a CECase or an OccPeriod
      */
     public void rules_attachEventRule(EventRuleAbstract era, IFace_EventRuleGoverned rg, User usr) throws IntegrationException, CaseLifecycleException{
-        EventIntegrator ei = getEventIntegrator();
+        
         ChoiceCoordinator cc = getChoiceCoordinator();
         int freshObjectID = 0;
         if(rg instanceof OccPeriod){
                 OccPeriod op = (OccPeriod) rg;
                 rules_attachEventRuleAbstractToOccPeriod(era, op, usr);
-                if(freshObjectID != 0 && era.getPromptingProposal() != null){
-                    // TODO: finish
-                    
+                if(freshObjectID != 0 && era.getPromptingDirective() != null){
+                    cc.implementDirective(era.getPromptingDirective(), op, null);
                 }
-                
             } else if (rg instanceof CECase){ 
                 CECase cec = (CECase) rg;
                 rules_attachEventRuleAbstractToCECase(era, cec);
+                if(freshObjectID != 0 && era.getPromptingDirective() != null){
+                    cc.implementDirective(era.getPromptingDirective(), cec, null);
+                }
             } else {
                 throw new CaseLifecycleException("Cannot attach rule set");
             }

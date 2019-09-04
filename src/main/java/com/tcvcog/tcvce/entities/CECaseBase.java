@@ -20,6 +20,7 @@ import com.tcvcog.tcvce.application.interfaces.IFace_EventRuleGoverned;
 public class CECaseBase 
         extends EntityUtils 
         implements Serializable, 
+                    Openable,
                     Cloneable{
     
     protected int caseID;
@@ -73,6 +74,14 @@ public class CECaseBase
         
     }
 
+    
+      @Override
+    public boolean isOpen() {
+        return this.casePhase.isCaseOpen();
+    }
+
+  
+    
     public long getCaseAge() {
         return getTimePeriodAsDays(originationDate, LocalDateTime.now());
     }

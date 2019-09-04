@@ -29,11 +29,6 @@ import com.tcvcog.tcvce.domain.PermissionsException;
 import com.tcvcog.tcvce.domain.ViolationException;
 import com.tcvcog.tcvce.entities.*;
 import com.tcvcog.tcvce.entities.occupancy.OccEvent;
-import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
-import com.tcvcog.tcvce.entities.search.QueryCEAR;
-import com.tcvcog.tcvce.entities.search.QueryCEAREnum;
-import com.tcvcog.tcvce.entities.search.SearchParamsCEActionRequests;
-import com.tcvcog.tcvce.entities.search.SearchParamsCECase;
 import com.tcvcog.tcvce.integration.CEActionRequestIntegrator;
 import com.tcvcog.tcvce.integration.CaseIntegrator;
 import com.tcvcog.tcvce.integration.CitationIntegrator;
@@ -51,12 +46,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.faces.application.FacesMessage;
 
@@ -148,9 +139,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
     public Icon getIconByCasePhase(CasePhase phase) throws IntegrationException{
         SystemIntegrator si = getSystemIntegrator();
         return si.getIcon(phase);
-        
     }
-    
    
      /**
      * A CECase's Stage is derived from its Phase based on the set of business
@@ -171,8 +160,6 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
         // data to determine the appropriate phase
         
         // case stage basically emerges from violation status assessment
-         
-         
         SystemIntegrator si = getSystemIntegrator();
         CaseStage stage;
         
@@ -210,9 +197,7 @@ public class CaseCoordinator extends BackingBeanUtils implements Serializable{
                         default: // unintentional dumping ground 
                             cse.setCasePhase(CasePhase.InactiveHolding);
                     }
-                    
                 }
-                
             }
         } else { // we have a closed case
             

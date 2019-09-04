@@ -35,8 +35,8 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
     protected boolean mandatoryRulePassRequiredToCloseEntity;
     protected boolean inactivateRuleOnEntityClose;
     
-    protected Proposal promptingProposal;
-    private int promptingProposalID_formOnly;
+    protected Directive promptingDirective;
+    protected int formPromptingDirectiveID;
    
     protected EventCategory triggeredECOnRulePass;
     protected EventCategory triggeredECOnRuleFail;
@@ -157,12 +157,6 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
         return inactivateRuleOnEntityClose;
     }
 
-    /**
-     * @return the promptingProposal
-     */
-    public Proposal getPromptingProposal() {
-        return promptingProposal;
-    }
 
     /**
      * @return the triggeredECOnRulePass
@@ -299,13 +293,6 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
     }
 
     /**
-     * @param promptingProposal the promptingProposal to set
-     */
-    public void setPromptingProposal(Proposal promptingProposal) {
-        this.promptingProposal = promptingProposal;
-    }
-
-    /**
      * @param triggeredECOnRulePass the triggeredECOnRulePass to set
      */
     public void setTriggeredECOnRulePass(EventCategory triggeredECOnRulePass) {
@@ -382,18 +369,33 @@ public class EventRuleAbstract extends EntityUtils implements Serializable {
         return forbiddenECThreshold_globalOrder;
     }
 
+
     /**
-     * @return the promptingProposalID_formOnly
+     * @return the promptingDirective
      */
-    public int getPromptingProposalID_formOnly() {
-        return promptingProposalID_formOnly;
+    public Directive getPromptingDirective() {
+        return promptingDirective;
     }
 
     /**
-     * @param promptingProposalID_formOnly the promptingProposalID_formOnly to set
+     * @return the formPromptingDirectiveID
      */
-    public void setPromptingProposalID_formOnly(int promptingProposalID_formOnly) {
-        this.promptingProposalID_formOnly = promptingProposalID_formOnly;
+    public int getFormPromptingDirectiveID() {
+        return formPromptingDirectiveID;
+    }
+
+    /**
+     * @param promptingDirective the promptingDirective to set
+     */
+    public void setPromptingDirective(Directive promptingDirective) {
+        this.promptingDirective = promptingDirective;
+    }
+
+    /**
+     * @param formPromptingDirectiveID the formPromptingDirectiveID to set
+     */
+    public void setFormPromptingDirectiveID(int formPromptingDirectiveID) {
+        this.formPromptingDirectiveID = formPromptingDirectiveID;
     }
 
     

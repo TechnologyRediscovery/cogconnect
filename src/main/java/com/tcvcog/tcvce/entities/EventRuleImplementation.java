@@ -58,13 +58,15 @@ public class EventRuleImplementation
 
         this.mandatoryRulePassRequiredToCloseEntity = rule.isMandatoryRulePassRequiredToCloseEntity();
         this.inactivateRuleOnEntityClose = rule.isInactivateRuleOnEntityClose();
-        this.promptingProposal = rule.getPromptingProposal();
 
         this.triggeredECOnRulePass = rule.getTriggeredECOnRulePass();
         this.triggeredECOnRuleFail = rule.getTriggeredECOnRuleFail();
 
         this.activeRuleAbstract = rule.isActiveRuleAbstract();
         this.notes = rule.getNotes();
+        this.promptingDirective = rule.getPromptingDirective();
+        this.formPromptingDirectiveID = rule.getFormPromptingDirectiveID();
+        
     }
 
     /**
