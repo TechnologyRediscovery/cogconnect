@@ -99,7 +99,13 @@ public class OccPeriod
     
      @Override
     public boolean isOpen() {
-        return status.isOpenPeriod();
+        // TEMPORARY until status flow is created
+        if(status != null){
+            return status.isOpenPeriod();
+        } else {
+            return true;
+        }
+                
     }
 
     @Override

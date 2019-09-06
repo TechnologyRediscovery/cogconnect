@@ -98,27 +98,34 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
                         && userWAccess.getAccessRecord().getSupportstartdate().isBefore(LocalDateTime.now())
                         && userWAccess.getAccessRecord().getSupportstopdate().isAfter(LocalDateTime.now())){
                     userWAccess.setRoleType(RoleType.Developer);
+                    userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
+                    return userWAccess;
                 } else if(userWAccess.getAccessRecord().getSysadminstartdate() != null
                         && userWAccess.getAccessRecord().getSysadminstopdate() != null
                         && userWAccess.getAccessRecord().getSysadminstartdate().isBefore(LocalDateTime.now())
                         && userWAccess.getAccessRecord().getSysadminstopdate().isAfter(LocalDateTime.now())){
                     userWAccess.setRoleType(RoleType.SysAdmin);
-                    
+                    userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
+                    return userWAccess;
                 } else if(userWAccess.getAccessRecord().getCodeofficerstartdate() != null
                         && userWAccess.getAccessRecord().getCodeofficerstopdate() != null
                         && userWAccess.getAccessRecord().getCodeofficerstartdate().isBefore(LocalDateTime.now())
                         &&userWAccess.getAccessRecord().getCodeofficerstopdate().isAfter(LocalDateTime.now())){
                     userWAccess.setRoleType(RoleType.EnforcementOfficial);
+                    userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
+                    return userWAccess;
                 } else if(userWAccess.getAccessRecord().getStaffstartdate() != null
                         && userWAccess.getAccessRecord().getStaffstopdate() != null
                         && userWAccess.getAccessRecord().getStaffstartdate().isBefore(LocalDateTime.now())
                         && userWAccess.getAccessRecord().getStaffstopdate().isAfter(LocalDateTime.now())){
                     userWAccess.setRoleType(RoleType.MuniStaff);
+                    userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
+                    return userWAccess;
                 } else {
                     userWAccess.setRoleType(RoleType.MuniReader);
+                    userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
+                    return userWAccess;
                 }
-                userWAccess.setKeyCard(getAccessKeyCard(userWAccess.getRoleType()));
-            return userWAccess;
         } else {
             throw new AuthorizationException("User exists but access to system "
                     + "has been switched off. If you believe you are receiving "
@@ -134,8 +141,6 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
 //        u.setPassword(tempPassword);
         int newUserID = ui.insertUser(u);
         return newUserID;
-        
-        
     }
     
     /**
@@ -156,9 +161,6 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
         return u;
     }
     
-  
-    
-    
     public void updateUser(User u) throws IntegrationException{
         UserIntegrator ui = getUserIntegrator();
         ui.updateUser(u);
@@ -177,7 +179,6 @@ public class UserCoordinator extends BackingBeanUtils implements Serializable {
         User u = new User();
         return u;
     }
-   
     
     public Municipality getDefaultyMuni(User u) throws IntegrationException, AuthorizationException{
         UserIntegrator ui = getUserIntegrator();

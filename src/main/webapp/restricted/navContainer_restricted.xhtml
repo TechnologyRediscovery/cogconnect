@@ -127,7 +127,7 @@
                                 <f:facet name="options">
                                     <p:commandButton    id="navcontres-button-logout"
                                                         action="#{systemServicesBB.logout}" 
-                                                        value="Logout: #{sessionBean.sessionUser.person.firstName}"
+                                                        value="Logout: #{sessionBean.sessionUser.person.firstName} (#{sessionBean.sessionUser.roleType.label}, rnk:#{sessionBean.sessionUser.roleType.rank})"
                                                         ajax="false"/>
                                 </f:facet>
                             </p:menubar>

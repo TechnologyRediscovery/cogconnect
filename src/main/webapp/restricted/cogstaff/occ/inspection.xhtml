@@ -517,7 +517,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                                                         ajax="true" 
                                                                         styleClass="proposal-choice-button"
                                                                         actionListener="#{occInspectionBB.proposals_makeChoice(choice, proposal)}"
-                                                                        disabled="#{!choice.canChoose}"
+                                                                        disabled="#{!choice.canChoose or !(empty proposal.responseTS)}"
                                                                         value="#{choice.title}"
                                                                         icon="#{choice.icon.fontAwesome}"
                                                                         title="#{choice.description}"
@@ -3226,7 +3226,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                 <h:message for="eventrules-newruleid-it" showDetail="false" showSummary="true"  
                                            warnClass="msgWarn" infoClass="msgInfo" fatalClass="msgFatal" errorClass="msgError" />
                                 
-                                <p:commandButton    id="eventrules-addnewrule-cb"
+                                <p:commandButton    id="eventrules-addnewrulebyid-cb"
                                                     ajax="true" 
                                                     styleClass="proposal-choice-button"
                                                     actionListener="#{occInspectionBB.rules_initiateEventRuleCreate}"
@@ -3787,10 +3787,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                                 <p:spacer height="3px"/>
                                 
                                 <h:outputLabel styleClass="ui-label" 
-                                               value="Propmpting proposal ID" 
+                                               value="Propmpting directive ID" 
                                                for="rule-promptprop"/>
                                 <p:inputText id="rule-promptprop" 
-                                             value="#{occInspectionBB.currentEventRuleAbstract.promptingProposalID_formOnly}" 
+                                             value="#{occInspectionBB.currentEventRuleAbstract.formPromptingDirectiveID}" 
                                                style="width: 20px;" 
                                                tabindex="3" 
                                                required="false" 

@@ -50,6 +50,7 @@ import com.tcvcog.tcvce.entities.occupancy.OccEvent;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriod;
 import com.tcvcog.tcvce.entities.occupancy.OccPeriodStatusEnum;
 import com.tcvcog.tcvce.entities.search.SearchParamsEventCECase;
+import com.tcvcog.tcvce.integration.ChoiceIntegrator;
 import com.tcvcog.tcvce.integration.EventIntegrator;
 import com.tcvcog.tcvce.integration.PersonIntegrator;
 import java.io.Serializable;
@@ -787,6 +788,7 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
                 rules_attachEventRuleAbstractToOccPeriod(era, op, usr);
                 if(freshObjectID != 0 && era.getPromptingDirective() != null){
                     cc.implementDirective(era.getPromptingDirective(), op, null);
+                    System.out.println("EventCoordinator.rules_attachEventRule | Found not null prompting directive");
                 }
             } else if (rg instanceof CECase){ 
                 CECase cec = (CECase) rg;
@@ -808,7 +810,6 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
     public List<EventRuleSet> rules_getEventRuleSetList() throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
         return ei.rules_getEventRuleSetList();
-        
     }  
     
     public EventRuleAbstract rules_getInitializedEventRuleAbstract(){
@@ -835,7 +836,17 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
      */
     public int rules_createEventRuleAbstract(EventRuleAbstract era, OccPeriod period, CECase cse, boolean connectToBOBRuleList, User usr) throws IntegrationException{
         EventIntegrator ei = getEventIntegrator();
+        ChoiceIntegrator ci = getChoiceIntegrator();
+        
         int freshEventRuleID;
+        if(era.getFormPromptingDirectiveID() != 0){
+            Directive dir = ci.getDirective(era.getFormPromptingDirectiveID());
+            if(dir != null){
+                era.setPromptingDirective(dir);
+                System.out.println("EventCoordinator.rules_createEventRuleAbstract| Found not null directive ID: " + dir.getDirectiveID());
+            }
+        }
+        
         freshEventRuleID = ei.rules_insertEventRule(era);
         if(period != null && cse == null){
             era = ei.rules_getEventRuleAbstract(freshEventRuleID);
@@ -851,16 +862,29 @@ public class EventCoordinator extends BackingBeanUtils implements Serializable{
             }
         }
         
-        System.out.println("EventCoordinator.rules_addNewEventRuleAbstract | returned ID: " + freshEventRuleID);
+        System.out.println("EventCoordinator.rules_createEventRuleAbstract | returned ID: " + freshEventRuleID);
         return freshEventRuleID;
     }
     
     private void rules_attachEventRuleAbstractToOccPeriod(EventRuleAbstract era, OccPeriod period, User usr) throws IntegrationException{
+        
         EventIntegrator ei = getEventIntegrator();
+        ChoiceCoordinator cc = getChoiceCoordinator();
         EventRuleOccPeriod erop = new EventRuleOccPeriod(new EventRuleImplementation(era));
+        // avoid inserting and duplicating keys
+        if(ei.rules_getEventRuleOccPeriod(period.getPeriodID(), era.getRuleid()) == null){
         erop.setAttachedTS(LocalDateTime.now());
-        erop.setOccPeriodID(period.getPeriodID());
-        ei.rules_insertEventRuleOccPeriod(erop);
+            erop.setOccPeriodID(period.getPeriodID());
+            
+            erop.setLastEvaluatedTS(null);
+            erop.setPassedRuleTS(null);
+            erop.setPassedRuleEvent(null);
+            ei.rules_insertEventRuleOccPeriod(erop);
+        }
+        if(era.getPromptingDirective() != null){
+            cc.implementDirective(era.getPromptingDirective(), period, null);
+            System.out.println("EventCoordinator.rules_attachEventRulAbstractToOccPeriod | directive implemented with ID " + era.getPromptingDirective().getDirectiveID());
+        }
     }
     
     public void rules_attachEventRuleAbstractToOccPeriodTypeRuleSet(EventRuleAbstract era, OccPeriod period) throws IntegrationException{

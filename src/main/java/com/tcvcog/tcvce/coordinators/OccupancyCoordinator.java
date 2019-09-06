@@ -116,7 +116,7 @@ public class OccupancyCoordinator extends BackingBeanUtils implements Serializab
     public void configureRuleSet(OccPeriod period){
         List<EventRuleImplementation> evRuleList = period.assembleEventRuleList(ViewOptionsEventRulesEnum.VIEW_ALL);
         for(EventRuleAbstract era: evRuleList){
-            if(era.getPromptingProposal() != null){
+            if(era.getPromptingDirective()!= null){
                 // TODO: Finish
             }
         }

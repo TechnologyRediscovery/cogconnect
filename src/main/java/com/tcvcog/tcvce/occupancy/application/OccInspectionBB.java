@@ -425,7 +425,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
     
     public void proposals_makeChoice(Choice choice, Proposal p){
         OccupancyCoordinator oc = getOccupancyCoordinator();
-         System.out.println("OccInspectionBB.makeChoice");
+         System.out.println("OccInspectionBB.proposals_makeChoice");
         try {
             if(p instanceof ProposalOccPeriod){
                 oc.evaluateProposal(    p, 
@@ -673,7 +673,7 @@ public class OccInspectionBB extends BackingBeanUtils implements Serializable {
             ec.rules_attachEventRule(era, currentOccPeriod, getSessionBean().getSessionUser());
             getFacesContext().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_ERROR,
-                "Success! added rule set to occ period", ""));
+                "Success! added rule to occ period", ""));
         } catch (IntegrationException | CaseLifecycleException ex) {
             System.out.println(ex);
             getFacesContext().addMessage(null,

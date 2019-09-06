@@ -258,7 +258,7 @@ public class UserIntegrator extends BackingBeanUtils implements Serializable {
         rec.setBypasssupportassignmentorder(rs.getInt("bypasssupportassignmentorder"));
         
         if(rs.getTimestamp("recorddeactivatedts") != null){
-            rec.setRecordcreatedts(rs.getTimestamp("recorddeactivatedts").toLocalDateTime());
+            rec.setRecorddeactivatedts(rs.getTimestamp("recorddeactivatedts").toLocalDateTime());
         }
 //        rec.setRole(RoleType.valueOf("role"));
         rec.setMuniloginrecordid(rs.getInt("muniloginrecordid"));

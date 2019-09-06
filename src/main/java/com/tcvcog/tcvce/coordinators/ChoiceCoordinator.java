@@ -96,16 +96,19 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
             return proposal;
         }
         
-        if(proposal.getActivatesOn().isBefore(LocalDateTime.now()) && proposal.getExpiresOn().isAfter((LocalDateTime.now()))){
-            if(u.getRoleType().getRank() >= proposal.getDirective().getMinimumRequiredUserRankToView()){
+        if(proposal.getActivatesOn() != null && proposal.getExpiresOn() != null){
+            if(proposal.getActivatesOn().isBefore(LocalDateTime.now()) && proposal.getExpiresOn().isAfter((LocalDateTime.now()))){
                 proposal.setHidden(false);
-                if(u.getRoleType().getRank() >= proposal.getDirective().getMinimumRequiredUserRankToEvaluate()){
-                    proposal.setReadOnlyCurrentUser(false);
-                }
-                // this will only execute if we are unhidden
-                configureChoiceList(proposal, u);
+                
             }
         }
+        if(u.getRoleType().getRank() >= proposal.getDirective().getMinimumRequiredUserRankToView()){
+            proposal.setHidden(false);
+            if(u.getRoleType().getRank() >= proposal.getDirective().getMinimumRequiredUserRankToEvaluate()){
+                proposal.setReadOnlyCurrentUser(false);
+            }
+        }
+        configureChoiceList(proposal, u);
         return proposal;
     }
     
@@ -156,9 +159,12 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
         if(!proposal.isActive()){
             return false;
         }
-        if(!(proposal.getActivatesOn().isBefore(LocalDateTime.now()) 
-                && proposal.getExpiresOn().isAfter((LocalDateTime.now())))){
-            return false;
+        if(proposal.getActivatesOn() != null && proposal.getExpiresOn() != null){
+            if(!(proposal.getActivatesOn().isBefore(LocalDateTime.now()) 
+                    && proposal.getExpiresOn().isAfter((LocalDateTime.now())))){
+                return false;
+            }
+            
         }
         return true;
     }
@@ -205,6 +211,7 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
             ProposalOccPeriod pop = new ProposalOccPeriod(pr);
             pop.setOccperiodID(op.getPeriodID());
             pop.setPeriod(op);
+            ci.insertProposal(pop);
             
         } else if(propDriven instanceof CECase){
             CECase cse = (CECase) propDriven;
@@ -214,8 +221,8 @@ public class ChoiceCoordinator extends BackingBeanUtils implements Serializable{
             ProposalCECase pcec = new ProposalCECase(pr);
             pcec.setCeCase(cse);
             pcec.setCeCaseID(cse.getCaseID());
+            ci.insertProposal(pcec);
         }
-        ci.insertProposal(pr);
     }
     
     
